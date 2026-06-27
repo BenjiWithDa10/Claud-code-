@@ -1,0 +1,17 @@
+# Roblox / Rojo build output
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+build/
+*.rbxm
+*.rbxmx
+
+# Toolchain caches
+.aftman/
+.rokit/
+
+# Editor noise
+.DS_Store
+.vscode/
+*.log

@@ -1,0 +1,5 @@
+[tools]
+# Rojo syncs this source tree into Roblox Studio.
+# Install the toolchain with `aftman install` (or use Rokit, which reads the
+# same manifest), then run `rojo serve` and connect from the Rojo Studio plugin.
+rojo = "rojo-rbx/rojo@7.4.4"
