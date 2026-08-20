@@ -133,6 +133,30 @@ function PlotService.assign(player: Player)
 	label.Font = Enum.Font.GothamBold
 	label.Parent = billboard
 
+	-- A welcome sign floating right above the spawn point.
+	local welcomeSign = WorldBuilder.makeBlock(
+		Vector3.new(TILE, 0.4, TILE),
+		CFrame.new(origin + Vector3.new(0, 11, 0)),
+		Color3.fromRGB(40, 40, 50),
+		folder,
+		"WelcomeSign"
+	)
+	welcomeSign.Transparency = 1
+	local welcomeBillboard = Instance.new("BillboardGui")
+	welcomeBillboard.Size = UDim2.fromScale(8, 2)
+	welcomeBillboard.StudsOffset = Vector3.new(0, 2, 0)
+	welcomeBillboard.AlwaysOnTop = true
+	welcomeBillboard.Parent = welcomeSign
+	local welcomeLabel = Instance.new("TextLabel")
+	welcomeLabel.Size = UDim2.fromScale(1, 1)
+	welcomeLabel.BackgroundTransparency = 1
+	welcomeLabel.Text = "Hello Benji"
+	welcomeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	welcomeLabel.TextStrokeTransparency = 0.4
+	welcomeLabel.TextScaled = true
+	welcomeLabel.Font = Enum.Font.GothamBold
+	welcomeLabel.Parent = welcomeBillboard
+
 	return record
 end
 
