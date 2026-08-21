@@ -62,7 +62,9 @@ Config.Map = {
 	SlotMarkerColor = Color3.fromRGB(255, 210, 60),
 
 	-- Open lawn beyond the stages/studios so nothing ends in a cliff edge.
-	GroundMargin = 80,
+	-- Kept fairly narrow so the crowd (which starts right at this edge)
+	-- reads as close and looming rather than a distant backdrop.
+	GroundMargin = 45,
 	GroundThickness = 2,
 	GroundColor = Color3.fromRGB(80, 150, 95),
 
@@ -84,15 +86,18 @@ Config.Map = {
 
 		-- Tiered rows of figures: each row sits further outward and taller
 		-- than the last, which alone reads as "rising up" without needing
-		-- sloped terrain.
+		-- sloped terrain. Big height/depth jumps between rows so the tiers
+		-- are unmistakable rather than reading as one flat line.
 		RowCount = 3,
-		RowDepth = 5, -- outward distance between successive rows
-		RowRise = 5, -- how much taller each successive row's figures get
-		BaseHeight = 12, -- figure height of the nearest row (tall enough to block sightlines)
+		RowDepth = 14, -- outward distance between successive rows
+		RowRise = 18, -- how much taller each successive row's figures get
+		BaseHeight = 34, -- figure height of the nearest row -- tall enough to wall off the skyline
 
 		-- Individual figure silhouettes: a simple torso + head, packed tight.
-		FigureMinWidth = 3,
-		FigureMaxWidth = 5,
+		-- Sized big enough that the crowd feels close and looming rather
+		-- than a thin distant line.
+		FigureMinWidth = 5,
+		FigureMaxWidth = 9,
 		FigureDepth = 1.5,
 		FigureGap = 0.4, -- small gap so the row still reads as densely packed
 		HeadHeightFraction = 0.22,
