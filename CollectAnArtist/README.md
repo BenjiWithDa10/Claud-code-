@@ -34,19 +34,27 @@ kept in its own folder so the two games don't collide.
 
   The exit wall has a real stadium **player-tunnel** (`Map.Crowd.Tunnel`)
   built into it, not just a painted-on dark square: a recessed passage —
-  side walls, ceiling and floor — cut through the bottom rows of
-  risers/figures, fading from a lit grey at the mouth to near-black at the
-  back (`TunnelWallColor` → `TunnelColor` over `TunnelFadeSteps` segments),
-  capped by a dark `Backdrop` so it reads as leading into darkness rather
-  than stopping abruptly. Rows above the tunnel continue uninterrupted,
-  arching over the opening. The despawner (`SpawnerSquare`) sits inside the
-  passage itself (`TunnelDespawnerInset` studs in from the mouth) instead of
-  out on the open field. The invisible barrier follows a matching notch
-  shape — flush with the rest of the exit wall except across the tunnel's
-  width, where it steps back `TunnelBarrierInset` studs into the mouth, so
-  players can see a short way in (including the despawner, unreachable)
-  before hitting the wall — it's still a purely visual passage, not new
-  walkable space beyond that notch. No animation/cheering or day-night
+  side walls, a thick lintel and a floor — cut through the bottom rows of
+  risers/figures. The doorway itself is person-scale (`TunnelWidth` x
+  `TunnelHeight`, 10x9 by default), squared off rather than arched/rounded;
+  the leftover height above it (up to where the rows arch over) is filled
+  by a solid lintel in a tone close to the risers, so the passage reads as
+  running *under* the stands rather than a box poking through the wall. It
+  fades from a lit grey at the mouth to near-black at the back via many
+  small color-and-transparency steps (`TunnelWallColor` → `TunnelColor`
+  over `TunnelFadeSteps` segments, ramping up to `TunnelMaxFadeTransparency`
+  on the side walls), capped by a dark `Backdrop` so it reads as a
+  continuous darkening into real depth rather than a few flat bands or an
+  abrupt stop. Rows above the tunnel continue uninterrupted, arching over
+  the opening. The despawner (`SpawnerSquare`, sized via
+  `TunnelDespawnerSize` to fit the smaller doorway) sits inside the passage
+  itself (`TunnelDespawnerInset` studs in from the mouth) instead of out on
+  the open field. The invisible barrier follows a matching notch shape —
+  flush with the rest of the exit wall except across the tunnel's width,
+  where it steps back `TunnelBarrierInset` studs into the mouth, so players
+  can see a short way in (including the despawner, unreachable) before
+  hitting the wall — it's still a purely visual passage, not new walkable
+  space beyond that notch. No animation/cheering or day-night
   reaction yet — those are future hooks — but the whole look is
   config-driven via `Config.Map.Crowd` so they're easy to add later.
 

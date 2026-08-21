@@ -95,24 +95,37 @@ Config.Map = {
 		ExitWallBuffer = 0, -- clearance beyond the exit stage's platform edge before the wall/crowd starts
 
 		-- A real stadium player-tunnel: a recessed passage (side walls +
-		-- ceiling + floor) cut into the bottom of the exit wall, centered
-		-- on the despawner. TunnelRows sets both how many of the bottom
-		-- crowd rows are skipped to make room for it (TunnelRows*RowDepth
-		-- deep, TunnelRows*RowRise tall) and rows above continue
-		-- uninterrupted, arching over the opening.
-		TunnelWidth = 24, -- wider than the stage's own spawner square (18) so it frames the despawner
-		TunnelRows = 3, -- how many of the bottom rows are skipped/how deep+tall the passage is
-		TunnelWallThickness = 1.5, -- side wall / ceiling / floor thickness
-		TunnelWallColor = Color3.fromRGB(50, 50, 58), -- lit grey at the mouth
+		-- a thick "lintel" ceiling + floor) cut into the bottom of the
+		-- exit wall, centered on the despawner. The doorway itself is
+		-- TunnelWidth x TunnelHeight -- kept person-scale, not cave-sized.
+		-- TunnelRows separately controls the structural depth/cut: how
+		-- many of the bottom crowd rows are skipped (TunnelRows*RowDepth
+		-- deep) and how tall a slice is carved out overall
+		-- (TunnelRows*RowRise) before rows above continue uninterrupted,
+		-- arching over the opening. Since the doorway is shorter than
+		-- that carved slice, the leftover height above the doorway (up to
+		-- where the arch starts) is filled by a solid lintel block in the
+		-- same tone as the risers, so the passage reads as running under
+		-- the stands rather than a box poking through the wall.
+		TunnelWidth = 10, -- clear opening width -- room for a couple of people abreast
+		TunnelHeight = 9, -- clear opening height -- roughly door-height, not oversized
+		TunnelRows = 3, -- how many of the bottom rows are skipped / how deep+tall the carved slice is
+		TunnelWallThickness = 1.5, -- side wall / lintel / floor thickness
+		TunnelWallColor = Color3.fromRGB(50, 50, 58), -- lit grey at the mouth (close to RiserColor, so the lintel blends in)
 		TunnelColor = Color3.fromRGB(8, 8, 10), -- near-black, at the deepest point
-		TunnelFadeSteps = 4, -- how many shaded segments the mouth-to-back gradient is built from
+		TunnelFadeSteps = 10, -- fine enough that the mouth-to-back gradient doesn't read as banded blocks
+		TunnelMaxFadeTransparency = 0.5, -- side walls ramp up to this transparency by the back segment, on top of the color fade
 
-		-- The despawner sits inside the passage, not out on the open
-		-- field -- and the invisible barrier sits a bit shallower than
-		-- that, so players can see a short way in (and see the despawner
-		-- itself, unreachable) before hitting the wall. Both measured as
-		-- studs in from the tunnel mouth; must stay less than
-		-- TunnelRows * RowDepth.
+		-- The despawner sits inside the passage, sized to fit the smaller
+		-- doorway rather than the stage's own (much bigger) spawner square.
+		TunnelDespawnerSize = 7,
+
+		-- The despawner sits a bit back from the mouth, and the invisible
+		-- barrier sits a bit shallower than that, so players can see a
+		-- short way in (and see the despawner itself, unreachable) before
+		-- hitting the wall. Both measured as studs in from the tunnel
+		-- mouth; must stay less than TunnelRows * RowDepth. Unaffected by
+		-- the doorway's width/height, only by how deep the carved slice is.
 		TunnelBarrierInset = 4,
 		TunnelDespawnerInset = 8,
 

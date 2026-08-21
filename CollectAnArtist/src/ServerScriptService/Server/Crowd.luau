@@ -51,8 +51,9 @@ local function exitWallX(layout: { [string]: any }): number
 	return halfConveyor + layout.StageLength + layout.Crowd.ExitWallBuffer
 end
 
--- The tunnel's mouth X, total depth/height, and half-width -- derived from
--- how many rows it cuts through.
+-- The tunnel's mouth X, total carved depth, the full height of the carved
+-- slice (taller than the doorway itself -- see TunnelHeight/the lintel in
+-- buildTunnel), and half-width -- derived from how many rows it cuts through.
 local function tunnelGeometry(layout: { [string]: any }): (number, number, number, number)
 	local C = layout.Crowd
 	return exitWallX(layout), C.TunnelRows * C.RowDepth, C.TunnelRows * C.RowRise, C.TunnelWidth / 2
@@ -321,9 +322,13 @@ local function buildFigures(folder: Folder, layout: { [string]: any }, totalX: n
 end
 
 -- ----------------------------------------------------------------------------
--- Tunnel -- a real recessed passage (side walls, ceiling, floor) leading
--- into the crowd structure, fading from lit grey at the mouth to
--- near-black at the back, with the despawner sitting inside it.
+-- Tunnel -- a real recessed passage leading into the crowd structure: a
+-- person-scale doorway (side walls sized to TunnelHeight) topped by a
+-- thick lintel that fills the rest of the carved-out slice up to where the
+-- crowd rows arch over, so it reads as running under the stands rather
+-- than a box poking through the wall. Fades from lit grey to near-black
+-- via many small color+transparency steps rather than a few flat bands,
+-- with the despawner sitting inside it.
 -- ----------------------------------------------------------------------------
 
 local function buildTunnelSegment(
@@ -332,41 +337,62 @@ local function buildTunnelSegment(
 	segEndX: number,
 	halfTunnel: number,
 	floorY: number,
-	height: number,
+	doorHeight: number,
+	cutHeight: number,
 	thickness: number,
-	color: Color3
+	color: Color3,
+	wallTransparency: number
 )
 	local length = segEndX - segStartX
 	local centerX = (segStartX + segEndX) / 2
 
-	local function part(name: string, size: Vector3, cframe: CFrame)
+	local function part(name: string, size: Vector3, cframe: CFrame, transparency: number)
 		local p = Instance.new("Part")
 		p.Name = name
 		p.Anchored = true
 		p.CanCollide = false
 		p.Material = Enum.Material.SmoothPlastic
 		p.Color = color
+		p.Transparency = transparency
 		p.Size = size
 		p.CFrame = cframe
 		p.Parent = folder
 	end
 
+	-- The doorway's own walls -- these get the fade transparency, since
+	-- they're what the player is actually looking down the length of.
 	part(
 		"LeftWall",
-		Vector3.new(length, height, thickness),
-		CFrame.new(centerX, floorY + height / 2, -halfTunnel - thickness / 2)
+		Vector3.new(length, doorHeight, thickness),
+		CFrame.new(centerX, floorY + doorHeight / 2, -halfTunnel - thickness / 2),
+		wallTransparency
 	)
 	part(
 		"RightWall",
-		Vector3.new(length, height, thickness),
-		CFrame.new(centerX, floorY + height / 2, halfTunnel + thickness / 2)
+		Vector3.new(length, doorHeight, thickness),
+		CFrame.new(centerX, floorY + doorHeight / 2, halfTunnel + thickness / 2),
+		wallTransparency
 	)
+
+	-- A solid, opaque lintel filling everything from the doorway's top up
+	-- to the carved slice's full height -- this is what sells "running
+	-- under the stands" instead of "a short box poking through the wall".
+	local lintelHeight = cutHeight - doorHeight
+	if lintelHeight > 0 then
+		part(
+			"Ceiling",
+			Vector3.new(length, lintelHeight, halfTunnel * 2 + thickness * 2),
+			CFrame.new(centerX, floorY + doorHeight + lintelHeight / 2, 0),
+			0
+		)
+	end
+
 	part(
-		"Ceiling",
-		Vector3.new(length, thickness, halfTunnel * 2 + thickness * 2),
-		CFrame.new(centerX, floorY + height + thickness / 2, 0)
+		"Floor",
+		Vector3.new(length, thickness, halfTunnel * 2),
+		CFrame.new(centerX, floorY - thickness / 2, 0),
+		0
 	)
-	part("Floor", Vector3.new(length, thickness, halfTunnel * 2), CFrame.new(centerX, floorY - thickness / 2, 0))
 end
 
 local function buildTunnel(folder: Folder, layout: { [string]: any })
@@ -379,12 +405,13 @@ local function buildTunnel(folder: Folder, layout: { [string]: any })
 	tunnelFolder.Name = "Tunnel"
 	tunnelFolder.Parent = folder
 
-	local exitX, depth, height, halfTunnel = tunnelGeometry(layout)
+	local exitX, depth, cutHeight, halfTunnel = tunnelGeometry(layout)
 	local floorY = layout.GroundY
 	local thickness = C.TunnelWallThickness
+	local doorHeight = C.TunnelHeight
 
-	-- Mouth-to-back color fade, built from a handful of shaded segments
-	-- (a cheap stand-in for a real gradient/fog).
+	-- Mouth-to-back fade, built from many small color+transparency steps
+	-- so it reads as a continuous darkening rather than visible bands.
 	local steps = math.max(1, C.TunnelFadeSteps)
 	for i = 0, steps - 1 do
 		local segStartX = exitX + (i / steps) * depth
@@ -394,25 +421,29 @@ local function buildTunnel(folder: Folder, layout: { [string]: any })
 			t = i / (steps - 1)
 		end
 		local color = C.TunnelWallColor:Lerp(C.TunnelColor, t)
+		local wallTransparency = t * C.TunnelMaxFadeTransparency
 
-		buildTunnelSegment(tunnelFolder, segStartX, segEndX, halfTunnel, floorY, height, thickness, color)
+		buildTunnelSegment(tunnelFolder, segStartX, segEndX, halfTunnel, floorY, doorHeight, cutHeight, thickness, color, wallTransparency)
 	end
 
-	-- Dark cap at the very back, so the passage reads as ending in
-	-- darkness rather than showing through to whatever's beyond it.
+	-- Dark cap at the very back of the doorway, so the passage reads as
+	-- ending in darkness rather than showing through to whatever's beyond
+	-- it. (The lintel above is already sealed by the last segment's own
+	-- Ceiling piece.)
 	local cap = Instance.new("Part")
 	cap.Name = "Backdrop"
 	cap.Anchored = true
 	cap.CanCollide = false
 	cap.Material = Enum.Material.SmoothPlastic
 	cap.Color = C.TunnelColor
-	cap.Size = Vector3.new(thickness, height, halfTunnel * 2)
-	cap.CFrame = CFrame.new(exitX + depth, floorY + height / 2, 0)
+	cap.Size = Vector3.new(thickness, doorHeight, halfTunnel * 2)
+	cap.CFrame = CFrame.new(exitX + depth, floorY + doorHeight / 2, 0)
 	cap.Parent = tunnelFolder
 
-	-- The despawner itself, sitting inside the passage (a bit back from
-	-- the mouth) rather than out on the open field.
-	local squareSize = layout.StageSpawnerSize
+	-- The despawner itself, sized to fit the smaller doorway and sitting
+	-- inside the passage (a bit back from the mouth) rather than out on
+	-- the open field.
+	local squareSize = C.TunnelDespawnerSize
 	local despawner = Instance.new("Part")
 	despawner.Name = "SpawnerSquare"
 	despawner.Anchored = true
