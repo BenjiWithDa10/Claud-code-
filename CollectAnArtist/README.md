@@ -9,9 +9,11 @@ kept in its own folder so the two games don't collide.
 - A central **conveyor line** (`Map.ConveyorLine.Walkway`) running down the
   middle, flush with the rest of the ground — no stairs or jumps needed.
 - An **entrance stage** and **exit stage** (`Map.Stages`), one at each end of
-  the conveyor. Each has a `SpawnerSquare` marking where artists appear/
-  despawn, framed on three sides by a small booth (`BackWall`, `LeftWall`,
-  `RightWall`) sitting flush against the square's edges.
+  the conveyor. The entrance stage has a `SpawnerSquare` marking where
+  artists appear, framed on three sides by a small booth (`BackWall`,
+  `LeftWall`, `RightWall`) sitting flush against the square's edges. The
+  exit stage is just a bare platform — its despawner lives inside the
+  crowd's tunnel instead (see below).
 - Placeholder **studio plots** (`Map.Studios.Left` / `Map.Studios.Right`),
   4 per side (8 total, the current cap), spaced well apart from each other
   and from the conveyor, facing inward toward it. Each plot is a floor + 3
@@ -28,15 +30,24 @@ kept in its own folder so the two games don't collide.
   tight against the exit stage's platform edge (east end, where artists
   despawn) so there's no walkable space behind the despawner. The two long
   sides (studios) are unchanged, chamfered into the exit wall at their east
-  end and left open-ended at their west tip. The exit wall also has a
-  stadium **player-tunnel** cut into its bottom rows, centered on the
-  despawner: those rows leave a gap instead of solid risers/figures there,
-  capped by a dark recessed `Tunnel.Backdrop` a few rows back, while the
-  rows above continue uninterrupted and arch over the opening — it reads as
-  a tunnel mouth artists "leave through" when they despawn, without a fully
-  modeled interior. The invisible barrier is untouched by the tunnel — it's
-  a purely visual cut, not new walkable space. No animation/cheering or
-  day-night reaction yet — those are future hooks — but the whole look is
+  end and left open-ended at their west tip.
+
+  The exit wall has a real stadium **player-tunnel** (`Map.Crowd.Tunnel`)
+  built into it, not just a painted-on dark square: a recessed passage —
+  side walls, ceiling and floor — cut through the bottom rows of
+  risers/figures, fading from a lit grey at the mouth to near-black at the
+  back (`TunnelWallColor` → `TunnelColor` over `TunnelFadeSteps` segments),
+  capped by a dark `Backdrop` so it reads as leading into darkness rather
+  than stopping abruptly. Rows above the tunnel continue uninterrupted,
+  arching over the opening. The despawner (`SpawnerSquare`) sits inside the
+  passage itself (`TunnelDespawnerInset` studs in from the mouth) instead of
+  out on the open field. The invisible barrier follows a matching notch
+  shape — flush with the rest of the exit wall except across the tunnel's
+  width, where it steps back `TunnelBarrierInset` studs into the mouth, so
+  players can see a short way in (including the despawner, unreachable)
+  before hitting the wall — it's still a purely visual passage, not new
+  walkable space beyond that notch. No animation/cheering or day-night
+  reaction yet — those are future hooks — but the whole look is
   config-driven via `Config.Map.Crowd` so they're easy to add later.
 
 No spawn logic or gameplay scripts yet — this is purely the greybox layout,
@@ -77,8 +88,9 @@ All the spacing/size numbers live in
 `StudiosPerSide`, `StudioWidth`/`StudioDepth`, `StudioGap`,
 `StudioConveyorGap`, `ConveyorWidth`, `EndMargin`, the `StageSpawnerSize`/
 `StageBooth*` values for each stage's booth, and the `Crowd` sub-table
-(row count/spacing/height, figure size, color, transparency, and the
-global atmosphere haze) for the border. The conveyor's length is derived
+(row count/spacing/height, figure size, color, transparency, the global
+atmosphere haze, and the `Tunnel*` values for the exit tunnel's size, fade
+colors and barrier/despawner insets) for the border. The conveyor's length is derived
 automatically from the studio count and size, so proportions stay
 consistent if you change the plot count. `StudiosPerSide` is capped at 4
 (8 total) by an assertion in `Config.luau`.

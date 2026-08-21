@@ -16,7 +16,7 @@
 		│   └── Walkway
 		├── Stages
 		│   ├── EntranceStage (Platform, SpawnerSquare, BackWall, Left/RightWall)
-		│   └── ExitStage     (same shape)
+		│   └── ExitStage     (Platform only -- its despawner lives in Crowd.Tunnel)
 		├── Studios
 		│   ├── Left
 		│   │   ├── Plot_1 ... Plot_N
@@ -24,11 +24,14 @@
 		│       ├── Plot_1 ... Plot_N
 		└── Crowd          (a "C" shape: open behind the entrance stage, closed
 		                    tight behind the exit stage -- see Crowd.luau)
-			├── Barrier    (invisible collision walls; none on the entrance end)
+			├── Barrier    (invisible walls; none on the entrance end, notched
+			│               around the tunnel mouth on the exit end)
 			├── Risers     (solid ascending steps; bottom rows cut for the tunnel)
 			├── Figures    (many rows of person-scale dark silhouettes)
-			└── Tunnel
-				└── Backdrop (dark recessed cap behind the exit stage's tunnel mouth)
+			└── Tunnel     (a real recessed passage into the exit wall)
+				├── LeftWall/RightWall/Ceiling/Floor (per fade segment, mouth to back)
+				├── Backdrop     (dark cap at the very back)
+				└── SpawnerSquare (the despawner, inside the passage)
 
 	MapBuilder.build() is idempotent -- calling it again (e.g. repeatedly
 	from the Command Bar while tweaking Config values) destroys the previous

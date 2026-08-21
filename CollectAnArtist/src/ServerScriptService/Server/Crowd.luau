@@ -21,15 +21,17 @@
 	  running the full ground edge -- open-ended at their west tip (nothing
 	  to blend into) and chamfered into the exit wall at their east end.
 
-	The exit wall also has a stadium player-tunnel cut into its bottom few
-	rows, centered on the despawner: those rows leave a gap instead of a
-	solid riser/figures there, capped by a dark recessed backdrop a few
-	rows back, while the rows above continue uninterrupted and arch over
-	the opening. It reads as a tunnel mouth leading into the stands, not a
-	fully modeled interior.
+	The exit wall also has a real player-tunnel built into it: a recessed
+	passage (side walls, ceiling, floor) that cuts through the bottom
+	TunnelRows rows of risers/figures, fading from a lit grey at the mouth
+	to near-black at the back, with the despawner sitting inside it. Rows
+	above TunnelRows continue uninterrupted, arching over the opening. The
+	invisible barrier follows the same notch shape -- flush with the rest
+	of the exit wall except across the tunnel's width, where it steps back
+	TunnelBarrierInset studs so players can see (not walk) a short way in.
 
 	The barrier is the only thing players can actually collide with here --
-	every riser and figure is CanCollide = false, purely visual.
+	every riser, figure and tunnel part is CanCollide = false, purely visual.
 
 	Deliberately unfinished on purpose: no animation/cheering (that's tied
 	to a future legendary-artist spawn event) and no day/night reaction
@@ -47,6 +49,13 @@ local Crowd = {}
 local function exitWallX(layout: { [string]: any }): number
 	local halfConveyor = layout.ConveyorLength / 2
 	return halfConveyor + layout.StageLength + layout.Crowd.ExitWallBuffer
+end
+
+-- The tunnel's mouth X, total depth/height, and half-width -- derived from
+-- how many rows it cuts through.
+local function tunnelGeometry(layout: { [string]: any }): (number, number, number, number)
+	local C = layout.Crowd
+	return exitWallX(layout), C.TunnelRows * C.RowDepth, C.TunnelRows * C.RowRise, C.TunnelWidth / 2
 end
 
 -- The North/NE-chamfer/SE-chamfer/South segments of a row's outline -- the
@@ -84,8 +93,9 @@ local function exitWallSegments(halfZ: number, exitX: number, chamfer: number, r
 end
 
 -- ----------------------------------------------------------------------------
--- Invisible barrier: no wall at all on the entrance (west) end, closed
--- tight behind the exit stage's despawner on the east end.
+-- Invisible barrier: no wall at all on the entrance (west) end. On the
+-- east end, flush with the exit wall everywhere except a notch across the
+-- tunnel's width, recessed TunnelBarrierInset studs into the mouth.
 -- ----------------------------------------------------------------------------
 
 local function buildBarrierWall(
@@ -131,15 +141,23 @@ local function buildBarrier(folder: Folder, layout: { [string]: any }, totalX: n
 	local C = layout.Crowd
 	local halfX = totalX / 2
 	local halfZ = totalZ / 2
-	local exitX = exitWallX(layout)
+	local exitX, _, _, halfTunnel = tunnelGeometry(layout)
+	local innerX = exitX + C.TunnelBarrierInset
 	-- Extend past corners so the walls overlap and never leave a collision gap.
 	local corner = C.BarrierThickness * 2
 
 	-- North & South: open at the west (entrance) tip, closed against the exit wall.
 	buildBarrierWall(barrierFolder, "X", halfZ, -halfX - corner, exitX + corner, layout)
 	buildBarrierWall(barrierFolder, "X", -halfZ, -halfX - corner, exitX + corner, layout)
-	-- Exit wall, right behind the despawner.
-	buildBarrierWall(barrierFolder, "Z", exitX, -halfZ - corner, halfZ + corner, layout)
+
+	-- Exit wall at the mouth, on either side of the tunnel opening.
+	buildBarrierWall(barrierFolder, "Z", exitX, -halfZ - corner, -halfTunnel, layout)
+	buildBarrierWall(barrierFolder, "Z", exitX, halfTunnel, halfZ + corner, layout)
+	-- The notch's own side walls, connecting the mouth plane back to the recessed wall.
+	buildBarrierWall(barrierFolder, "X", -halfTunnel, exitX - corner, innerX + corner, layout)
+	buildBarrierWall(barrierFolder, "X", halfTunnel, exitX - corner, innerX + corner, layout)
+	-- The recessed wall itself, a short way inside the tunnel mouth.
+	buildBarrierWall(barrierFolder, "Z", innerX, -halfTunnel - corner, halfTunnel + corner, layout)
 	-- No west wall -- the entrance end is deliberately left open.
 end
 
@@ -303,10 +321,53 @@ local function buildFigures(folder: Folder, layout: { [string]: any }, totalX: n
 end
 
 -- ----------------------------------------------------------------------------
--- Tunnel -- a dark, recessed backdrop capping the gap left by the cut rows,
--- so the opening reads as leading back into shadow rather than showing
--- daylight/sky straight through.
+-- Tunnel -- a real recessed passage (side walls, ceiling, floor) leading
+-- into the crowd structure, fading from lit grey at the mouth to
+-- near-black at the back, with the despawner sitting inside it.
 -- ----------------------------------------------------------------------------
+
+local function buildTunnelSegment(
+	folder: Folder,
+	segStartX: number,
+	segEndX: number,
+	halfTunnel: number,
+	floorY: number,
+	height: number,
+	thickness: number,
+	color: Color3
+)
+	local length = segEndX - segStartX
+	local centerX = (segStartX + segEndX) / 2
+
+	local function part(name: string, size: Vector3, cframe: CFrame)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Anchored = true
+		p.CanCollide = false
+		p.Material = Enum.Material.SmoothPlastic
+		p.Color = color
+		p.Size = size
+		p.CFrame = cframe
+		p.Parent = folder
+	end
+
+	part(
+		"LeftWall",
+		Vector3.new(length, height, thickness),
+		CFrame.new(centerX, floorY + height / 2, -halfTunnel - thickness / 2)
+	)
+	part(
+		"RightWall",
+		Vector3.new(length, height, thickness),
+		CFrame.new(centerX, floorY + height / 2, halfTunnel + thickness / 2)
+	)
+	part(
+		"Ceiling",
+		Vector3.new(length, thickness, halfTunnel * 2 + thickness * 2),
+		CFrame.new(centerX, floorY + height + thickness / 2, 0)
+	)
+	part("Floor", Vector3.new(length, thickness, halfTunnel * 2), CFrame.new(centerX, floorY - thickness / 2, 0))
+end
 
 local function buildTunnel(folder: Folder, layout: { [string]: any })
 	local C = layout.Crowd
@@ -318,20 +379,49 @@ local function buildTunnel(folder: Folder, layout: { [string]: any })
 	tunnelFolder.Name = "Tunnel"
 	tunnelFolder.Parent = folder
 
-	local exitX = exitWallX(layout)
-	local groundTopY = layout.GroundY - layout.GroundDrop
-	local depth = C.TunnelRows * C.RowDepth
-	local height = C.TunnelRows * C.RowRise
+	local exitX, depth, height, halfTunnel = tunnelGeometry(layout)
+	local floorY = layout.GroundY
+	local thickness = C.TunnelWallThickness
 
-	local backdrop = Instance.new("Part")
-	backdrop.Name = "Backdrop"
-	backdrop.Anchored = true
-	backdrop.CanCollide = false
-	backdrop.Material = Enum.Material.SmoothPlastic
-	backdrop.Color = C.TunnelColor
-	backdrop.Size = Vector3.new(2, height, C.TunnelWidth)
-	backdrop.CFrame = CFrame.new(exitX + depth, groundTopY + height / 2, 0)
-	backdrop.Parent = tunnelFolder
+	-- Mouth-to-back color fade, built from a handful of shaded segments
+	-- (a cheap stand-in for a real gradient/fog).
+	local steps = math.max(1, C.TunnelFadeSteps)
+	for i = 0, steps - 1 do
+		local segStartX = exitX + (i / steps) * depth
+		local segEndX = exitX + ((i + 1) / steps) * depth
+		local t = 1
+		if steps > 1 then
+			t = i / (steps - 1)
+		end
+		local color = C.TunnelWallColor:Lerp(C.TunnelColor, t)
+
+		buildTunnelSegment(tunnelFolder, segStartX, segEndX, halfTunnel, floorY, height, thickness, color)
+	end
+
+	-- Dark cap at the very back, so the passage reads as ending in
+	-- darkness rather than showing through to whatever's beyond it.
+	local cap = Instance.new("Part")
+	cap.Name = "Backdrop"
+	cap.Anchored = true
+	cap.CanCollide = false
+	cap.Material = Enum.Material.SmoothPlastic
+	cap.Color = C.TunnelColor
+	cap.Size = Vector3.new(thickness, height, halfTunnel * 2)
+	cap.CFrame = CFrame.new(exitX + depth, floorY + height / 2, 0)
+	cap.Parent = tunnelFolder
+
+	-- The despawner itself, sitting inside the passage (a bit back from
+	-- the mouth) rather than out on the open field.
+	local squareSize = layout.StageSpawnerSize
+	local despawner = Instance.new("Part")
+	despawner.Name = "SpawnerSquare"
+	despawner.Anchored = true
+	despawner.CanCollide = false
+	despawner.Material = Enum.Material.Neon
+	despawner.Color = layout.SlotMarkerColor
+	despawner.Size = Vector3.new(squareSize, 0.2, squareSize)
+	despawner.CFrame = CFrame.new(exitX + C.TunnelDespawnerInset, floorY + 0.1, 0)
+	despawner.Parent = tunnelFolder
 end
 
 -- ----------------------------------------------------------------------------

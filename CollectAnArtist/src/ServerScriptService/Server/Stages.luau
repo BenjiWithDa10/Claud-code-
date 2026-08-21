@@ -4,21 +4,20 @@
 	-----------
 	Builds the entrance and exit stages, one at each end of the conveyor
 	line. Each stage is a flat platform (same flush ground height as
-	everything else) with a marked "SpawnerSquare" showing exactly where
-	artists will appear/despawn, framed on three sides by a small booth --
-	its back wall and two short side walls sit flush against the square's
-	edges, no gap.
+	everything else).
+
+	The entrance stage gets its own marked "SpawnerSquare" showing where
+	artists appear, framed on three sides by a small booth -- its back wall
+	and two short side walls sit flush against the square's edges, no gap.
+
+	The exit stage does NOT get one: its despawner now lives inside the
+	player-tunnel built into the crowd structure (see Crowd.luau), not out
+	on the open platform, so Stages.luau only builds its bare platform.
 ]]
 
 local Stages = {}
 
-local function buildStage(
-	folder: Folder,
-	name: string,
-	centerX: number,
-	outwardSign: number,
-	layout: { [string]: any }
-)
+local function buildPlatform(folder: Folder, name: string, centerX: number, layout: { [string]: any }): Folder
 	local stageFolder = Instance.new("Folder")
 	stageFolder.Name = name
 	stageFolder.Parent = folder
@@ -34,6 +33,15 @@ local function buildStage(
 	platform.BottomSurface = Enum.SurfaceType.Smooth
 	platform.Parent = stageFolder
 
+	return stageFolder
+end
+
+local function buildBooth(
+	stageFolder: Folder,
+	centerX: number,
+	outwardSign: number,
+	layout: { [string]: any }
+)
 	-- The spawner square, inset from the platform's outward edge.
 	local squareSize = layout.StageSpawnerSize
 	local outerEdgeX = centerX + outwardSign * (layout.StageLength / 2)
@@ -88,8 +96,11 @@ end
 function Stages.build(folder: Folder, layout: { [string]: any })
 	local halfConveyor = layout.ConveyorLength / 2
 
-	buildStage(folder, "EntranceStage", -halfConveyor - layout.StageLength / 2, -1, layout)
-	buildStage(folder, "ExitStage", halfConveyor + layout.StageLength / 2, 1, layout)
+	local entranceX = -halfConveyor - layout.StageLength / 2
+	local entranceFolder = buildPlatform(folder, "EntranceStage", entranceX, layout)
+	buildBooth(entranceFolder, entranceX, -1, layout)
+
+	buildPlatform(folder, "ExitStage", halfConveyor + layout.StageLength / 2, layout)
 end
 
 return Stages
