@@ -28,7 +28,14 @@ kept in its own folder so the two games don't collide.
   tight against the exit stage's platform edge (east end, where artists
   despawn) so there's no walkable space behind the despawner. The two long
   sides (studios) are unchanged, chamfered into the exit wall at their east
-  end and left open-ended at their west tip. No animation/cheering or
+  end and left open-ended at their west tip. The exit wall also has a
+  stadium **player-tunnel** cut into its bottom rows, centered on the
+  despawner: those rows leave a gap instead of solid risers/figures there,
+  capped by a dark recessed `Tunnel.Backdrop` a few rows back, while the
+  rows above continue uninterrupted and arch over the opening — it reads as
+  a tunnel mouth artists "leave through" when they despawn, without a fully
+  modeled interior. The invisible barrier is untouched by the tunnel — it's
+  a purely visual cut, not new walkable space. No animation/cheering or
   day-night reaction yet — those are future hooks — but the whole look is
   config-driven via `Config.Map.Crowd` so they're easy to add later.
 

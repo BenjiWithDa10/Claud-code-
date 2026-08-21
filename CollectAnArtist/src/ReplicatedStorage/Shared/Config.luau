@@ -94,6 +94,15 @@ Config.Map = {
 		-- against the platform edge (0), not offset from it.
 		ExitWallBuffer = 0, -- clearance beyond the exit stage's platform edge before the wall/crowd starts
 
+		-- A stadium player-tunnel cut into the bottom of the exit wall,
+		-- centered on the despawner: the rows below TunnelRows leave a gap
+		-- instead of a solid riser/figures there, capped by a dark
+		-- recessed Backdrop a few rows back. Rows above continue
+		-- uninterrupted and arch over the opening.
+		TunnelWidth = 24, -- wider than the stage's own spawner square (18) so it frames the despawner
+		TunnelRows = 3, -- how many of the bottom rows are cut through to form the opening
+		TunnelColor = Color3.fromRGB(8, 8, 10), -- near-black, recessed look
+
 		-- How much each straight edge is trimmed back at its corners and
 		-- replaced by a diagonal fill, so the crowd wraps around each
 		-- corner instead of meeting the next edge at a hard right angle.

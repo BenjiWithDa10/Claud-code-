@@ -21,6 +21,13 @@
 	  running the full ground edge -- open-ended at their west tip (nothing
 	  to blend into) and chamfered into the exit wall at their east end.
 
+	The exit wall also has a stadium player-tunnel cut into its bottom few
+	rows, centered on the despawner: those rows leave a gap instead of a
+	solid riser/figures there, capped by a dark recessed backdrop a few
+	rows back, while the rows above continue uninterrupted and arch over
+	the opening. It reads as a tunnel mouth leading into the stands, not a
+	fully modeled interior.
+
 	The barrier is the only thing players can actually collide with here --
 	every riser and figure is CanCollide = false, purely visual.
 
@@ -42,20 +49,38 @@ local function exitWallX(layout: { [string]: any }): number
 	return halfConveyor + layout.StageLength + layout.Crowd.ExitWallBuffer
 end
 
--- A row's outline as a "C" shape open at the west (entrance) end: a North
--- wall, a chamfered NE corner, the East (exit) wall, a chamfered SE corner,
--- and a South wall. No segment at all on the west -- that end is open.
-local function rowSegments(halfX: number, halfZ: number, exitX: number, chamfer: number): { { Vector3 } }
+-- The North/NE-chamfer/SE-chamfer/South segments of a row's outline -- the
+-- part of the "C" shape that never changes. No segment at all on the west
+-- (entrance) end -- that end is open.
+local function nonExitSegments(halfX: number, halfZ: number, exitX: number, chamfer: number): { { Vector3 } }
 	local nearExitX = exitX - chamfer
 	local nearZ = halfZ - chamfer
 
 	return {
 		{ Vector3.new(-halfX, 0, halfZ), Vector3.new(nearExitX, 0, halfZ) }, -- North
 		{ Vector3.new(nearExitX, 0, halfZ), Vector3.new(exitX, 0, nearZ) }, -- NE chamfer
-		{ Vector3.new(exitX, 0, nearZ), Vector3.new(exitX, 0, -nearZ) }, -- Exit wall
 		{ Vector3.new(exitX, 0, -nearZ), Vector3.new(nearExitX, 0, -halfZ) }, -- SE chamfer
 		{ Vector3.new(nearExitX, 0, -halfZ), Vector3.new(-halfX, 0, -halfZ) }, -- South
 	}
+end
+
+-- The East (exit) wall segment(s) for one row. The bottom TunnelRows rows
+-- leave a gap centered on the despawner instead of a solid piece, so the
+-- tunnel opening reads as a real hole in the structure; rows above that
+-- get the normal single full-width segment, arching over the opening.
+local function exitWallSegments(halfZ: number, exitX: number, chamfer: number, row: number, layout: { [string]: any }): { { Vector3 } }
+	local C = layout.Crowd
+	local nearZ = halfZ - chamfer
+
+	if row < C.TunnelRows then
+		local halfTunnel = C.TunnelWidth / 2
+		return {
+			{ Vector3.new(exitX, 0, nearZ), Vector3.new(exitX, 0, halfTunnel) },
+			{ Vector3.new(exitX, 0, -halfTunnel), Vector3.new(exitX, 0, -nearZ) },
+		}
+	end
+
+	return { { Vector3.new(exitX, 0, nearZ), Vector3.new(exitX, 0, -nearZ) } }
 end
 
 -- ----------------------------------------------------------------------------
@@ -164,8 +189,12 @@ local function buildRisers(folder: Folder, layout: { [string]: any }, totalX: nu
 	for row = 1, C.RowCount - 1 do
 		local reach = row * C.RowDepth + C.RowDepth / 2
 		local topY = groundTopY + row * C.RowRise
+		local rowHalfX, rowHalfZ, rowExitX = halfX + reach, halfZ + reach, exitX + reach
 
-		for _, seg in ipairs(rowSegments(halfX + reach, halfZ + reach, exitX + reach, C.CornerChamfer)) do
+		for _, seg in ipairs(nonExitSegments(rowHalfX, rowHalfZ, rowExitX, C.CornerChamfer)) do
+			buildRiserSegment(risersFolder, seg[1], seg[2], groundTopY, topY, layout)
+		end
+		for _, seg in ipairs(exitWallSegments(rowHalfZ, rowExitX, C.CornerChamfer, row, layout)) do
 			buildRiserSegment(risersFolder, seg[1], seg[2], groundTopY, topY, layout)
 		end
 	end
@@ -262,11 +291,47 @@ local function buildFigures(folder: Folder, layout: { [string]: any }, totalX: n
 	for row = 0, C.RowCount - 1 do
 		local reach = row * C.RowDepth + C.RowDepth / 2
 		local standY = groundTopY + row * C.RowRise
+		local rowHalfX, rowHalfZ, rowExitX = halfX + reach, halfZ + reach, exitX + reach
 
-		for _, seg in ipairs(rowSegments(halfX + reach, halfZ + reach, exitX + reach, C.CornerChamfer)) do
+		for _, seg in ipairs(nonExitSegments(rowHalfX, rowHalfZ, rowExitX, C.CornerChamfer)) do
+			buildFigureSegment(figuresFolder, rng, seg[1], seg[2], standY, layout)
+		end
+		for _, seg in ipairs(exitWallSegments(rowHalfZ, rowExitX, C.CornerChamfer, row, layout)) do
 			buildFigureSegment(figuresFolder, rng, seg[1], seg[2], standY, layout)
 		end
 	end
+end
+
+-- ----------------------------------------------------------------------------
+-- Tunnel -- a dark, recessed backdrop capping the gap left by the cut rows,
+-- so the opening reads as leading back into shadow rather than showing
+-- daylight/sky straight through.
+-- ----------------------------------------------------------------------------
+
+local function buildTunnel(folder: Folder, layout: { [string]: any })
+	local C = layout.Crowd
+	if C.TunnelRows <= 0 then
+		return
+	end
+
+	local tunnelFolder = Instance.new("Folder")
+	tunnelFolder.Name = "Tunnel"
+	tunnelFolder.Parent = folder
+
+	local exitX = exitWallX(layout)
+	local groundTopY = layout.GroundY - layout.GroundDrop
+	local depth = C.TunnelRows * C.RowDepth
+	local height = C.TunnelRows * C.RowRise
+
+	local backdrop = Instance.new("Part")
+	backdrop.Name = "Backdrop"
+	backdrop.Anchored = true
+	backdrop.CanCollide = false
+	backdrop.Material = Enum.Material.SmoothPlastic
+	backdrop.Color = C.TunnelColor
+	backdrop.Size = Vector3.new(2, height, C.TunnelWidth)
+	backdrop.CFrame = CFrame.new(exitX + depth, groundTopY + height / 2, 0)
+	backdrop.Parent = tunnelFolder
 end
 
 -- ----------------------------------------------------------------------------
@@ -299,6 +364,7 @@ function Crowd.build(folder: Folder, layout: { [string]: any }, totalX: number, 
 	buildBarrier(folder, layout, totalX, totalZ)
 	buildRisers(folder, layout, totalX, totalZ)
 	buildFigures(folder, layout, totalX, totalZ)
+	buildTunnel(folder, layout)
 	applyAtmosphere(layout)
 end
 

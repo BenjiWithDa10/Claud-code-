@@ -25,8 +25,10 @@
 		└── Crowd          (a "C" shape: open behind the entrance stage, closed
 		                    tight behind the exit stage -- see Crowd.luau)
 			├── Barrier    (invisible collision walls; none on the entrance end)
-			├── Risers     (solid ascending steps each row of figures stands on)
-			└── Figures    (many rows of person-scale dark silhouettes)
+			├── Risers     (solid ascending steps; bottom rows cut for the tunnel)
+			├── Figures    (many rows of person-scale dark silhouettes)
+			└── Tunnel
+				└── Backdrop (dark recessed cap behind the exit stage's tunnel mouth)
 
 	MapBuilder.build() is idempotent -- calling it again (e.g. repeatedly
 	from the Command Bar while tweaking Config values) destroys the previous
