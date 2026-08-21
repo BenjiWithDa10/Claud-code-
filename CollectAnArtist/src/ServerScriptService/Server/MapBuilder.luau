@@ -24,7 +24,8 @@
 		│       ├── Plot_1 ... Plot_N
 		└── Crowd
 			├── Barrier    (invisible collision walls right at the ground's edge)
-			└── Figures    (tiered rows of dark crowd silhouettes beyond it)
+			├── Risers     (solid ascending steps each row of figures stands on)
+			└── Figures    (many rows of person-scale dark silhouettes)
 
 	MapBuilder.build() is idempotent -- calling it again (e.g. repeatedly
 	from the Command Bar while tweaking Config values) destroys the previous

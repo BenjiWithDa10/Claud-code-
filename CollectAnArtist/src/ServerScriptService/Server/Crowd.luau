@@ -2,13 +2,15 @@
 --[[
 	Crowd.luau
 	----------
-	Rings the outside of the ground with a stylized, static crowd: an
-	invisible collision barrier sits right at the map's edge, and just
-	beyond it, tiered rows of simple dark silhouettes step outward and rise
-	higher -- the lower tiers of a packed stadium, not a flat wall.
+	Rings the outside of the ground with a stylized, static crowd built like
+	actual stadium seating: an invisible collision barrier sits right at the
+	map's edge, and just beyond it, a stack of solid ascending "risers"
+	carries many rows of small, person-scale silhouettes upward. Height
+	comes from stacking many modest rows, not from oversized figures -- that
+	way it reads as layers of people rather than a few flat panels.
 
 	The barrier is the only thing players can actually collide with here --
-	every figure is CanCollide = false, purely visual.
+	every riser and figure is CanCollide = false, purely visual.
 
 	Deliberately unfinished on purpose: no animation/cheering (that's tied
 	to a future legendary-artist spawn event) and no day/night reaction
@@ -20,6 +22,14 @@
 local Lighting = game:GetService("Lighting")
 
 local Crowd = {}
+
+-- A row's world position, centered on that row's depth band, on the given
+-- (positive or negative) side of the ground.
+local function rowOutwardCoord(halfExtent: number, row: number, sign: number, layout: { [string]: any }): number
+	local C = layout.Crowd
+	local center = halfExtent + row * C.RowDepth + C.RowDepth / 2
+	return sign * center
+end
 
 -- ----------------------------------------------------------------------------
 -- Invisible barrier
@@ -76,7 +86,97 @@ local function buildBarrier(folder: Folder, layout: { [string]: any }, totalX: n
 end
 
 -- ----------------------------------------------------------------------------
--- Crowd silhouettes
+-- Risers -- solid ascending steps each row of figures stands on
+-- ----------------------------------------------------------------------------
+
+local function buildRiserStep(
+	folder: Folder,
+	axis: string,
+	fixedCoord: number,
+	length: number,
+	bottomY: number,
+	topY: number,
+	layout: { [string]: any }
+)
+	local C = layout.Crowd
+	local sizeY = topY - bottomY
+	local centerY = (bottomY + topY) / 2
+
+	local riser = Instance.new("Part")
+	riser.Name = "Riser"
+	riser.Anchored = true
+	riser.CanCollide = false
+	riser.Material = Enum.Material.SmoothPlastic
+	riser.Color = C.RiserColor
+
+	if axis == "X" then
+		riser.Size = Vector3.new(length, sizeY, C.RowDepth)
+		riser.CFrame = CFrame.new(0, centerY, fixedCoord)
+	else
+		riser.Size = Vector3.new(C.RowDepth, sizeY, length)
+		riser.CFrame = CFrame.new(fixedCoord, centerY, 0)
+	end
+
+	riser.Parent = folder
+end
+
+-- Row 0 stands directly on the ground -- no riser needed under it. Every
+-- row after that gets a solid step up to its own tread height.
+local function buildRisers(folder: Folder, layout: { [string]: any }, totalX: number, totalZ: number)
+	local risersFolder = Instance.new("Folder")
+	risersFolder.Name = "Risers"
+	risersFolder.Parent = folder
+
+	local C = layout.Crowd
+	local halfX = totalX / 2
+	local halfZ = totalZ / 2
+	local groundTopY = layout.GroundY - layout.GroundDrop
+	local corner = C.RowDepth -- small overlap so the riser ring covers its corners
+
+	for row = 1, C.RowCount - 1 do
+		local topY = groundTopY + row * C.RowRise
+
+		buildRiserStep(
+			risersFolder,
+			"X",
+			rowOutwardCoord(halfZ, row, 1, layout),
+			totalX + corner * 2,
+			groundTopY,
+			topY,
+			layout
+		)
+		buildRiserStep(
+			risersFolder,
+			"X",
+			rowOutwardCoord(halfZ, row, -1, layout),
+			totalX + corner * 2,
+			groundTopY,
+			topY,
+			layout
+		)
+		buildRiserStep(
+			risersFolder,
+			"Z",
+			rowOutwardCoord(halfX, row, 1, layout),
+			totalZ + corner * 2,
+			groundTopY,
+			topY,
+			layout
+		)
+		buildRiserStep(
+			risersFolder,
+			"Z",
+			rowOutwardCoord(halfX, row, -1, layout),
+			totalZ + corner * 2,
+			groundTopY,
+			topY,
+			layout
+		)
+	end
+end
+
+-- ----------------------------------------------------------------------------
+-- Crowd silhouettes -- person-scale, standing on each row's tread
 -- ----------------------------------------------------------------------------
 
 local function buildFigure(
@@ -86,12 +186,11 @@ local function buildFigure(
 	fixedCoord: number,
 	pos: number,
 	width: number,
-	height: number,
+	standY: number,
 	layout: { [string]: any }
 )
 	local C = layout.Crowd
-	local baseY = layout.GroundY - layout.GroundDrop
-
+	local height = math.max(1, C.PersonHeight + rng:NextNumber(-C.PersonHeightJitter, C.PersonHeightJitter))
 	local torsoHeight = height * (1 - C.HeadHeightFraction)
 	local headHeight = height * C.HeadHeightFraction
 	local headWidth = width * C.HeadWidthFraction
@@ -102,11 +201,11 @@ local function buildFigure(
 	local base
 	local torsoSize, headSize
 	if axis == "X" then
-		base = CFrame.new(pos, baseY, fixedCoord) * CFrame.Angles(0, yaw, 0)
+		base = CFrame.new(pos, standY, fixedCoord) * CFrame.Angles(0, yaw, 0)
 		torsoSize = Vector3.new(width, torsoHeight, C.FigureDepth)
 		headSize = Vector3.new(headWidth, headHeight, C.FigureDepth * 0.8)
 	else
-		base = CFrame.new(fixedCoord, baseY, pos) * CFrame.Angles(0, yaw, 0)
+		base = CFrame.new(fixedCoord, standY, pos) * CFrame.Angles(0, yaw, 0)
 		torsoSize = Vector3.new(C.FigureDepth, torsoHeight, width)
 		headSize = Vector3.new(C.FigureDepth * 0.8, headHeight, headWidth)
 	end
@@ -134,14 +233,14 @@ local function buildFigure(
 	head.Parent = folder
 end
 
-local function buildRow(
+local function buildFigureRow(
 	folder: Folder,
 	rng: Random,
 	axis: string,
 	fixedCoord: number,
 	rangeMin: number,
 	rangeMax: number,
-	rowHeight: number,
+	standY: number,
 	layout: { [string]: any }
 )
 	local C = layout.Crowd
@@ -149,10 +248,9 @@ local function buildRow(
 
 	while pos < rangeMax do
 		local width = rng:NextNumber(C.FigureMinWidth, C.FigureMaxWidth)
-		local height = math.max(1, rowHeight + rng:NextNumber(-2, 2))
 		local center = pos + width / 2
 
-		buildFigure(folder, rng, axis, fixedCoord, center, width, height, layout)
+		buildFigure(folder, rng, axis, fixedCoord, center, width, standY, layout)
 
 		pos += width + C.FigureGap
 	end
@@ -168,16 +266,52 @@ local function buildFigures(folder: Folder, layout: { [string]: any }, totalX: n
 
 	local halfX = totalX / 2
 	local halfZ = totalZ / 2
+	local groundTopY = layout.GroundY - layout.GroundDrop
 	local corner = C.FigureMaxWidth * 3 -- extend past corners so rows overlap and cover them
 
 	for row = 0, C.RowCount - 1 do
-		local outward = row * C.RowDepth
-		local rowHeight = C.BaseHeight + row * C.RowRise
+		local standY = groundTopY + row * C.RowRise
 
-		buildRow(figuresFolder, rng, "X", halfZ + outward, -halfX - corner, halfX + corner, rowHeight, layout)
-		buildRow(figuresFolder, rng, "X", -halfZ - outward, -halfX - corner, halfX + corner, rowHeight, layout)
-		buildRow(figuresFolder, rng, "Z", halfX + outward, -halfZ - corner, halfZ + corner, rowHeight, layout)
-		buildRow(figuresFolder, rng, "Z", -halfX - outward, -halfZ - corner, halfZ + corner, rowHeight, layout)
+		buildFigureRow(
+			figuresFolder,
+			rng,
+			"X",
+			rowOutwardCoord(halfZ, row, 1, layout),
+			-halfX - corner,
+			halfX + corner,
+			standY,
+			layout
+		)
+		buildFigureRow(
+			figuresFolder,
+			rng,
+			"X",
+			rowOutwardCoord(halfZ, row, -1, layout),
+			-halfX - corner,
+			halfX + corner,
+			standY,
+			layout
+		)
+		buildFigureRow(
+			figuresFolder,
+			rng,
+			"Z",
+			rowOutwardCoord(halfX, row, 1, layout),
+			-halfZ - corner,
+			halfZ + corner,
+			standY,
+			layout
+		)
+		buildFigureRow(
+			figuresFolder,
+			rng,
+			"Z",
+			rowOutwardCoord(halfX, row, -1, layout),
+			-halfZ - corner,
+			halfZ + corner,
+			standY,
+			layout
+		)
 	end
 end
 
@@ -206,9 +340,10 @@ local function applyAtmosphere(layout: { [string]: any })
 end
 
 -- totalX/totalZ are the ground plane's full footprint -- the barrier sits
--- right on its edge, and the crowd rises up just beyond that.
+-- right on its edge, and the risers/crowd climb upward just beyond that.
 function Crowd.build(folder: Folder, layout: { [string]: any }, totalX: number, totalZ: number)
 	buildBarrier(folder, layout, totalX, totalZ)
+	buildRisers(folder, layout, totalX, totalZ)
 	buildFigures(folder, layout, totalX, totalZ)
 	applyAtmosphere(layout)
 end

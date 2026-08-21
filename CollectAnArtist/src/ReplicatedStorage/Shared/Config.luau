@@ -84,25 +84,27 @@ Config.Map = {
 		BarrierThickness = 2,
 		BarrierEmbed = 10, -- extra height buried below ground so it can't be slipped under
 
-		-- Tiered rows of figures: each row sits further outward and taller
-		-- than the last, which alone reads as "rising up" without needing
-		-- sloped terrain. Big height/depth jumps between rows so the tiers
-		-- are unmistakable rather than reading as one flat line.
-		RowCount = 3,
-		RowDepth = 14, -- outward distance between successive rows
-		RowRise = 18, -- how much taller each successive row's figures get
-		BaseHeight = 34, -- figure height of the nearest row -- tall enough to wall off the skyline
+		-- Stadium risers: solid ascending steps behind the barrier. Each row
+		-- of figures stands on top of its own riser -- total height comes
+		-- from stacking many modest steps, not from oversized figures, so
+		-- it reads as tiered seating rather than a few flat panels.
+		RowCount = 10,
+		RowDepth = 5, -- outward depth of each riser step (how far back each row sits)
+		RowRise = 7, -- height gain per riser step
+		RiserColor = Color3.fromRGB(55, 55, 62), -- neutral stand structure, distinct from the figures
 
-		-- Individual figure silhouettes: a simple torso + head, packed tight.
-		-- Sized big enough that the crowd feels close and looming rather
-		-- than a thin distant line.
-		FigureMinWidth = 5,
-		FigureMaxWidth = 9,
-		FigureDepth = 1.5,
-		FigureGap = 0.4, -- small gap so the row still reads as densely packed
-		HeadHeightFraction = 0.22,
+		-- Individual figure silhouettes: person-scale, packed tight along
+		-- each row's tread, with a bit of height variation so they don't
+		-- all look cloned.
+		FigureMinWidth = 2,
+		FigureMaxWidth = 3.5,
+		FigureDepth = 1.2,
+		FigureGap = 0.3, -- small gap so the row still reads as densely packed
+		PersonHeight = 6, -- average individual figure height
+		PersonHeightJitter = 1.5, -- +/- random variation per figure
+		HeadHeightFraction = 0.25,
 		HeadWidthFraction = 0.55,
-		MaxYawJitter = 8, -- degrees, so the row isn't perfectly uniform
+		MaxYawJitter = 10, -- degrees, so the row isn't perfectly uniform
 
 		-- Dark, desaturated, slightly see-through so figures stay a soft
 		-- backdrop instead of popping into focus.
