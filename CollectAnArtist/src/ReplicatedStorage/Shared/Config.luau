@@ -66,19 +66,54 @@ Config.Map = {
 	GroundThickness = 2,
 	GroundColor = Color3.fromRGB(80, 150, 95),
 
-	-- Mountains ringing the outside of the ground as a natural world border.
-	Mountains = {
-		Seed = 20240521,
-		Depth = 60, -- how thick the mountain wall is, along the ring
-		MinWidth = 60,
-		MaxWidth = 140,
-		OverlapFactor = 0.7, -- <1 so neighboring mountains overlap and hide seams
-		MinHeight = 80,
-		MaxHeight = 220,
-		SnowHeight = 160, -- peaks taller than this get a lighter "snow cap" color
-		BaseEmbed = 60, -- extra height buried below ground so there's never a gap underneath
-		Color = Color3.fromRGB(90, 80, 75),
-		SnowColor = Color3.fromRGB(215, 215, 220),
+	-- A stylized static crowd ringing the outside of the ground as the
+	-- world's border: an invisible collision barrier right at the map's
+	-- edge, plus tiered rows of simple dark silhouettes stepping outward
+	-- and rising higher behind it (a "packed stadium crowd" read, not a
+	-- flat wall). Not animated and not tied to lighting yet -- those are
+	-- future hooks (a legendary-artist cheer event, a night flashlight
+	-- effect) -- but every knob needed to drive them later lives here.
+	Crowd = {
+		Seed = 20260821,
+
+		-- Invisible wall stopping players right at the map's edge, in front
+		-- of the crowd. The crowd itself never collides with anything.
+		BarrierHeight = 40,
+		BarrierThickness = 2,
+		BarrierEmbed = 10, -- extra height buried below ground so it can't be slipped under
+
+		-- Tiered rows of figures: each row sits further outward and taller
+		-- than the last, which alone reads as "rising up" without needing
+		-- sloped terrain.
+		RowCount = 3,
+		RowDepth = 5, -- outward distance between successive rows
+		RowRise = 5, -- how much taller each successive row's figures get
+		BaseHeight = 12, -- figure height of the nearest row (tall enough to block sightlines)
+
+		-- Individual figure silhouettes: a simple torso + head, packed tight.
+		FigureMinWidth = 3,
+		FigureMaxWidth = 5,
+		FigureDepth = 1.5,
+		FigureGap = 0.4, -- small gap so the row still reads as densely packed
+		HeadHeightFraction = 0.22,
+		HeadWidthFraction = 0.55,
+		MaxYawJitter = 8, -- degrees, so the row isn't perfectly uniform
+
+		-- Dark, desaturated, slightly see-through so figures stay a soft
+		-- backdrop instead of popping into focus.
+		ColorDark = Color3.fromRGB(16, 16, 20),
+		ColorLight = Color3.fromRGB(42, 42, 52),
+		Transparency = 0.15,
+
+		-- A light global haze that thickens the world's overall depth cues
+		-- (not targeted at the crowd specifically) to fake a soft-focus,
+		-- atmospheric edge without a real blur shader.
+		EnableAtmosphere = true,
+		AtmosphereColor = Color3.fromRGB(150, 150, 165),
+		AtmosphereDecay = Color3.fromRGB(35, 35, 45),
+		AtmosphereDensity = 0.3,
+		AtmosphereHaze = 1.6,
+		AtmosphereGlare = 0,
 	},
 }
 

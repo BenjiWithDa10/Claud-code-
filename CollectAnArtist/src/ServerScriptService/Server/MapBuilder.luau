@@ -22,7 +22,9 @@
 		│   │   ├── Plot_1 ... Plot_N
 		│   └── Right
 		│       ├── Plot_1 ... Plot_N
-		└── Mountains       (border wall ringing the outside of the ground)
+		└── Crowd
+			├── Barrier    (invisible collision walls right at the ground's edge)
+			└── Figures    (tiered rows of dark crowd silhouettes beyond it)
 
 	MapBuilder.build() is idempotent -- calling it again (e.g. repeatedly
 	from the Command Bar while tweaking Config values) destroys the previous
@@ -40,7 +42,7 @@ local Config = require(Shared.Config)
 local ConveyorLine = require(script.Parent.ConveyorLine)
 local Stages = require(script.Parent.Stages)
 local Studios = require(script.Parent.Studios)
-local Mountains = require(script.Parent.Mountains)
+local Crowd = require(script.Parent.Crowd)
 
 local MapBuilder = {}
 
@@ -58,8 +60,8 @@ local function buildLayout(): { [string]: any }
 	return layout
 end
 
--- The ground's full footprint -- also used to place the mountain ring just
--- outside its edges.
+-- The ground's full footprint -- also used to place the crowd/barrier ring
+-- just outside its edges.
 local function groundFootprint(layout: { [string]: any }): (number, number)
 	local totalX = layout.ConveyorLength + 2 * layout.StageLength + 2 * layout.GroundMargin
 	local totalZ = layout.ConveyorWidth
@@ -117,10 +119,10 @@ function MapBuilder.build(): Folder
 	studiosFolder.Parent = mapFolder
 	Studios.build(studiosFolder, layout)
 
-	local mountainsFolder = Instance.new("Folder")
-	mountainsFolder.Name = "Mountains"
-	mountainsFolder.Parent = mapFolder
-	Mountains.build(mountainsFolder, layout, totalX, totalZ)
+	local crowdFolder = Instance.new("Folder")
+	crowdFolder.Name = "Crowd"
+	crowdFolder.Parent = mapFolder
+	Crowd.build(crowdFolder, layout, totalX, totalZ)
 
 	return mapFolder
 end

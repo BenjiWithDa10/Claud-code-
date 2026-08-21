@@ -17,9 +17,13 @@ kept in its own folder so the two games don't collide.
   and from the conveyor, facing inward toward it. Each plot is a floor + 3
   walls (open toward the conveyor) with an `ArtistSlotMarker` to build the
   real artist-slot logic on top of later.
-- A ring of blocky **mountains** (`Map.Mountains`) around the outside of the
-  ground, so the map reads as having a natural edge instead of just an
-  invisible wall.
+- A stylized static **crowd** (`Map.Crowd`) ringing the outside of the ground:
+  an invisible collision `Barrier` right at the map's edge (players can't
+  walk into or past it), and beyond that, tiered rows of simple dark
+  silhouette `Figures` that step outward and rise higher — a packed stadium
+  read rather than a flat wall. No animation/cheering or day-night reaction
+  yet — those are future hooks — but the whole look is config-driven via
+  `Config.Map.Crowd` so they're easy to add later.
 
 No spawn logic or gameplay scripts yet — this is purely the greybox layout,
 built by `MapBuilder.luau` when the server starts.
@@ -58,8 +62,9 @@ All the spacing/size numbers live in
 `src/ReplicatedStorage/Shared/Config.luau` (`Config.Map`) — e.g.
 `StudiosPerSide`, `StudioWidth`/`StudioDepth`, `StudioGap`,
 `StudioConveyorGap`, `ConveyorWidth`, `EndMargin`, the `StageSpawnerSize`/
-`StageBooth*` values for each stage's booth, and the `Mountains` sub-table
-for the border wall. The conveyor's length is derived automatically from
-the studio count and size, so proportions stay consistent if you change
-the plot count. `StudiosPerSide` is capped at 4 (8 total) by an assertion
-in `Config.luau`.
+`StageBooth*` values for each stage's booth, and the `Crowd` sub-table
+(row count/spacing/height, figure size, color, transparency, and the
+global atmosphere haze) for the border. The conveyor's length is derived
+automatically from the studio count and size, so proportions stay
+consistent if you change the plot count. `StudiosPerSide` is capped at 4
+(8 total) by an assertion in `Config.luau`.
