@@ -80,8 +80,8 @@ Config.Map = {
 
 		-- Invisible wall stopping players right at the map's edge, in front
 		-- of the crowd. The crowd itself never collides with anything.
-		-- Deliberately absent on the entrance (west) end -- see EntranceOpen
-		-- below.
+		-- Deliberately absent on the entrance (west) end -- see
+		-- ExitWallBuffer below for how the shape is controlled.
 		BarrierHeight = 40,
 		BarrierThickness = 2,
 		BarrierEmbed = 10, -- extra height buried below ground so it can't be slipped under
@@ -90,8 +90,9 @@ Config.Map = {
 		-- entrance stage's end (west, behind where artists spawn in -- an
 		-- open performance-stage backdrop, not something to wall off) and
 		-- pulled in tight against the exit stage's end (east, behind the
-		-- despawner) so there's no walkable space back there.
-		ExitWallBuffer = 8, -- clearance beyond the exit stage's platform edge before the wall/crowd starts
+		-- despawner) so there's zero walkable space back there. Flush
+		-- against the platform edge (0), not offset from it.
+		ExitWallBuffer = 0, -- clearance beyond the exit stage's platform edge before the wall/crowd starts
 
 		-- How much each straight edge is trimmed back at its corners and
 		-- replaced by a diagonal fill, so the crowd wraps around each
