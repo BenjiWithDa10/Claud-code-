@@ -8,12 +8,18 @@ kept in its own folder so the two games don't collide.
 
 - A central **conveyor line** (`Map.ConveyorLine.Walkway`) running down the
   middle, flush with the rest of the ground — no stairs or jumps needed.
-- An **entrance stage** and **exit stage** (`Map.Stages`), one at each end of
-  the conveyor. The entrance stage has a `SpawnerSquare` marking where
-  artists appear, framed on three sides by a small booth (`BackWall`,
-  `LeftWall`, `RightWall`) sitting flush against the square's edges. The
-  exit stage is just a bare platform — its despawner lives inside the
-  crowd's tunnel instead (see below).
+- A full **concert-stage complex** at the entrance end (`Map.Stages.EntranceStage`,
+  built by `EntranceStage.luau`) and a bare platform at the exit end
+  (`Map.Stages.ExitStage` — its despawner lives inside the crowd's tunnel
+  instead, see below). The entrance stage is a raised `Riser` (the flat
+  performance area) with the `SpawnerSquare` centered on it like a
+  performer's mark, a `Backdrop` behind it (a panel, two `TrussPost`s, a
+  `TrussBeam`, and a handful of hanging `Light`s), and a `Ramp` sloping down
+  from riser height to the conveyor's ground level — a main `Tread` plus
+  stepped, progressively shorter `Apron` slices on each side so the sides
+  taper down to the ground instead of a vertical drop. `Speakers` (`Left`/
+  `Right`, each a row of `Cabinet`+`Horn` stacks) flank the ramp evenly on
+  both sides.
 - Placeholder **studio plots** (`Map.Studios.Left` / `Map.Studios.Right`),
   4 per side (8 total, the current cap), spaced well apart from each other
   and from the conveyor, facing inward toward it. Each plot is a floor + 3
@@ -93,11 +99,13 @@ stale duplicates.
 All the spacing/size numbers live in
 `src/ReplicatedStorage/Shared/Config.luau` (`Config.Map`) — e.g.
 `StudiosPerSide`, `StudioWidth`/`StudioDepth`, `StudioGap`,
-`StudioConveyorGap`, `ConveyorWidth`, `EndMargin`, the `StageSpawnerSize`/
-`StageBooth*` values for each stage's booth, and the `Crowd` sub-table
-(row count/spacing/height, figure size, color, transparency, the global
-atmosphere haze, and the `Tunnel*` values for the exit tunnel's size, fade
-colors and barrier/despawner insets) for the border. The conveyor's length is derived
-automatically from the studio count and size, so proportions stay
-consistent if you change the plot count. `StudiosPerSide` is capped at 4
-(8 total) by an assertion in `Config.luau`.
+`StudioConveyorGap`, `ConveyorWidth`, `EndMargin`, `StageSpawnerSize`, the
+`EntranceStage` sub-table (riser height, ramp length/width/taper, backdrop/
+truss/light sizing, speaker count/spacing) for the entrance's concert-stage
+complex, and the `Crowd` sub-table (row count/spacing/height, figure size,
+color, transparency, the global atmosphere haze, and the `Tunnel*` values
+for the exit tunnel's size, fade and barrier/despawner insets) for the
+border. The conveyor's length is derived automatically from the studio
+count and size, so proportions stay consistent if you change the plot
+count. `StudiosPerSide` is capped at 4 (8 total) by an assertion in
+`Config.luau`.

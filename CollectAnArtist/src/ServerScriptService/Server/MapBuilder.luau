@@ -15,7 +15,12 @@
 		├── ConveyorLine
 		│   └── Walkway
 		├── Stages
-		│   ├── EntranceStage (Platform, SpawnerSquare, BackWall, Left/RightWall)
+		│   ├── EntranceStage (a full concert-stage complex -- see EntranceStage.luau)
+		│   │   ├── Riser          (the flat elevated performance area)
+		│   │   ├── SpawnerSquare  (center-stage spawn mark)
+		│   │   ├── Backdrop       (Panel, TrussPost x2, TrussBeam, Light x N)
+		│   │   ├── Ramp           (Tread + tapered Apron slices down to the conveyor)
+		│   │   └── Speakers       (Left/Right, Cabinet+Horn x N each)
 		│   └── ExitStage     (Platform only -- its despawner lives in Crowd.Tunnel)
 		├── Studios
 		│   ├── Left

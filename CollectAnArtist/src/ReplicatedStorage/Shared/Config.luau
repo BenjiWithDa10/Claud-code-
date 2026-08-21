@@ -29,20 +29,61 @@ Config.Map = {
 	ConveyorHeight = 1, -- slab thickness
 	ConveyorColor = Color3.fromRGB(95, 95, 105),
 
-	-- Entrance/exit stages at each end of the conveyor.
+	-- Entrance/exit stages at each end of the conveyor. The exit stage is
+	-- just this bare platform (its despawner lives in the crowd's tunnel
+	-- instead -- see Crowd.luau); the entrance stage is a full concert-stage
+	-- complex built on top of the same footprint -- see EntranceStage.luau
+	-- and the EntranceStage sub-table below.
 	StageLength = 50, -- size along X
 	StageWidth = 70, -- size along Z (a bit wider than the conveyor)
 	StageHeight = 1,
 	StageColor = Color3.fromRGB(150, 110, 190),
 
-	-- The marked square on each stage where artists spawn in/despawn, and
-	-- the small 3-sided booth framing it (back + 2 short side walls,
-	-- flush against the square's edges -- no gap).
+	-- Shared size for the neon marker square showing where an artist
+	-- spawns/despawns (the entrance stage's center-stage mark, and
+	-- previously the exit's -- now just the entrance's).
 	StageSpawnerSize = 18,
-	StageSpawnerMargin = 6, -- gap between the platform's outer edge and the square
-	StageBoothWallHeight = 12,
-	StageBoothWallThickness = 2,
-	StageBoothColor = Color3.fromRGB(110, 80, 145),
+
+	-- The entrance's concert-stage complex: a raised riser (the flat
+	-- performance area, StageLength minus the ramp), a low ramp/walkway
+	-- sloping down from riser height to conveyor/ground level (with its
+	-- own sides tapering down to the ground rather than a vertical drop),
+	-- a backdrop + simple lighting truss behind the spawn mark, and
+	-- speakers flanking the ramp.
+	EntranceStage = {
+		RiserElevation = 5, -- how tall the flat stage area stands above ground/conveyor level
+
+		-- Ramp down to the conveyor: a main tread plus a few stepped,
+		-- progressively shorter "apron" slices on each side approximating
+		-- a taper down to the ground instead of vertical ramp walls.
+		RampLength = 16, -- horizontal run (X) from riser height down to 0
+		RampWidth = 20, -- width (Z) of the main tread, centered on the conveyor
+		RampSideTaperWidth = 10, -- how far the tapered aprons extend beyond the tread on each side
+		RampSideTaperSegments = 3, -- stepped slices approximating each side's downward taper
+		RampThickness = 1, -- tread/apron slab thickness
+
+		-- Backdrop + lighting truss behind the spawn mark, at the back of the stage.
+		BackdropWidth = 40,
+		BackdropHeight = 20,
+		BackdropThickness = 1,
+		BackdropColor = Color3.fromRGB(60, 45, 80),
+		TrussColor = Color3.fromRGB(40, 40, 45),
+		TrussPostThickness = 1.2,
+		TrussBeamThickness = 1,
+		TrussHeight = 22, -- height of the horizontal truss bar above stage level
+		LightCount = 5,
+		LightSize = 1.2,
+		LightColor = Color3.fromRGB(255, 210, 80),
+
+		-- Speaker stacks flanking the ramp/walkway, evenly spaced.
+		SpeakerCount = 3, -- per side
+		SpeakerWidth = 4,
+		SpeakerDepth = 4,
+		SpeakerCabinetHeight = 6,
+		SpeakerHornHeight = 2,
+		SpeakerColor = Color3.fromRGB(25, 25, 28),
+		SpeakerInset = 4, -- gap between the ramp's taper and the speakers
+	},
 
 	-- How much bare conveyor sits between the last studio plot and each stage.
 	EndMargin = 60,
