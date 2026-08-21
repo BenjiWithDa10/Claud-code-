@@ -84,6 +84,11 @@ Config.Map = {
 		BarrierThickness = 2,
 		BarrierEmbed = 10, -- extra height buried below ground so it can't be slipped under
 
+		-- How much each straight edge is trimmed back at its corners and
+		-- replaced by a diagonal fill, so the crowd wraps around each
+		-- corner instead of meeting the next edge at a hard right angle.
+		CornerChamfer = 35,
+
 		-- Stadium risers: solid ascending steps behind the barrier. Each row
 		-- of figures stands on top of its own riser -- total height comes
 		-- from stacking many modest steps, not from oversized figures, so

@@ -23,9 +23,12 @@ kept in its own folder so the two games don't collide.
   `Risers` behind it, and many rows (10 by default) of small, person-scale
   dark silhouette `Figures` standing on top of each riser — height comes
   from stacking rows, not from oversized figures, so it reads as layers of
-  people rather than a few flat panels. No animation/cheering or day-night
-  reaction yet — those are future hooks — but the whole look is
-  config-driven via `Config.Map.Crowd` so they're easy to add later.
+  people rather than a few flat panels. Each row's 4 straight edges are
+  chamfered with a diagonal fill at every corner, so the risers and figures
+  wrap around the map's perimeter smoothly instead of meeting at a hard
+  right angle. No animation/cheering or day-night reaction yet — those are
+  future hooks — but the whole look is config-driven via `Config.Map.Crowd`
+  so they're easy to add later.
 
 No spawn logic or gameplay scripts yet — this is purely the greybox layout,
 built by `MapBuilder.luau` when the server starts.

@@ -9,6 +9,11 @@
 	comes from stacking many modest rows, not from oversized figures -- that
 	way it reads as layers of people rather than a few flat panels.
 
+	Each row's outline is 4 straight edges with a diagonal chamfer at every
+	corner (instead of the edges meeting at a hard right angle), so risers
+	and figures both wrap smoothly around the map instead of looking like 4
+	separate walls butted together.
+
 	The barrier is the only thing players can actually collide with here --
 	every riser and figure is CanCollide = false, purely visual.
 
@@ -23,16 +28,34 @@ local Lighting = game:GetService("Lighting")
 
 local Crowd = {}
 
--- A row's world position, centered on that row's depth band, on the given
--- (positive or negative) side of the ground.
-local function rowOutwardCoord(halfExtent: number, row: number, sign: number, layout: { [string]: any }): number
-	local C = layout.Crowd
-	local center = halfExtent + row * C.RowDepth + C.RowDepth / 2
-	return sign * center
+-- ----------------------------------------------------------------------------
+-- Ring geometry: each row's outline as 8 segments (N/E/S/W straights, each
+-- trimmed back by CornerChamfer, plus a diagonal fill at each corner).
+-- Points are Vector3 with Y left at 0 -- callers supply the row's height.
+-- ----------------------------------------------------------------------------
+
+local function ringSegments(halfX: number, halfZ: number, chamfer: number): { { Vector3 } }
+	local nearX, nearZ = halfX - chamfer, halfZ - chamfer
+
+	return {
+		-- Straight edges.
+		{ Vector3.new(-nearX, 0, halfZ), Vector3.new(nearX, 0, halfZ) }, -- North
+		{ Vector3.new(nearX, 0, -halfZ), Vector3.new(-nearX, 0, -halfZ) }, -- South
+		{ Vector3.new(halfX, 0, -nearZ), Vector3.new(halfX, 0, nearZ) }, -- East
+		{ Vector3.new(-halfX, 0, nearZ), Vector3.new(-halfX, 0, -nearZ) }, -- West
+		-- Diagonal corner fills, each connecting the ends of the two
+		-- straights that would otherwise meet at a hard right angle.
+		{ Vector3.new(nearX, 0, halfZ), Vector3.new(halfX, 0, nearZ) }, -- NE
+		{ Vector3.new(-nearX, 0, halfZ), Vector3.new(-halfX, 0, nearZ) }, -- NW
+		{ Vector3.new(-nearX, 0, -halfZ), Vector3.new(-halfX, 0, -nearZ) }, -- SW
+		{ Vector3.new(nearX, 0, -halfZ), Vector3.new(halfX, 0, -nearZ) }, -- SE
+	}
 end
 
 -- ----------------------------------------------------------------------------
--- Invisible barrier
+-- Invisible barrier (unchanged square corners -- it's invisible, so the
+-- hard corner has no visual impact, and the overlap already guarantees no
+-- collision gap).
 -- ----------------------------------------------------------------------------
 
 local function buildBarrierWall(
@@ -86,19 +109,21 @@ local function buildBarrier(folder: Folder, layout: { [string]: any }, totalX: n
 end
 
 -- ----------------------------------------------------------------------------
--- Risers -- solid ascending steps each row of figures stands on
+-- Risers -- solid ascending steps each row of figures stands on. Built
+-- from the same 8-segment ring outline as the figures, so the riser mass
+-- itself is chamfered at the corners too.
 -- ----------------------------------------------------------------------------
 
-local function buildRiserStep(
-	folder: Folder,
-	axis: string,
-	fixedCoord: number,
-	length: number,
-	bottomY: number,
-	topY: number,
-	layout: { [string]: any }
-)
+local function buildRiserSegment(folder: Folder, pointA: Vector3, pointB: Vector3, bottomY: number, topY: number, layout: { [string]: any })
 	local C = layout.Crowd
+	local delta = pointB - pointA
+	local length = delta.Magnitude
+	if length < 0.01 then
+		return
+	end
+	local tangent = delta / length
+	local yaw = math.atan2(-tangent.Z, tangent.X)
+	local mid = (pointA + pointB) / 2
 	local sizeY = topY - bottomY
 	local centerY = (bottomY + topY) / 2
 
@@ -108,15 +133,8 @@ local function buildRiserStep(
 	riser.CanCollide = false
 	riser.Material = Enum.Material.SmoothPlastic
 	riser.Color = C.RiserColor
-
-	if axis == "X" then
-		riser.Size = Vector3.new(length, sizeY, C.RowDepth)
-		riser.CFrame = CFrame.new(0, centerY, fixedCoord)
-	else
-		riser.Size = Vector3.new(C.RowDepth, sizeY, length)
-		riser.CFrame = CFrame.new(fixedCoord, centerY, 0)
-	end
-
+	riser.Size = Vector3.new(length, sizeY, C.RowDepth)
+	riser.CFrame = CFrame.new(mid.X, centerY, mid.Z) * CFrame.Angles(0, yaw, 0)
 	riser.Parent = folder
 end
 
@@ -131,64 +149,24 @@ local function buildRisers(folder: Folder, layout: { [string]: any }, totalX: nu
 	local halfX = totalX / 2
 	local halfZ = totalZ / 2
 	local groundTopY = layout.GroundY - layout.GroundDrop
-	local corner = C.RowDepth -- small overlap so the riser ring covers its corners
 
 	for row = 1, C.RowCount - 1 do
+		local reach = row * C.RowDepth + C.RowDepth / 2
 		local topY = groundTopY + row * C.RowRise
 
-		buildRiserStep(
-			risersFolder,
-			"X",
-			rowOutwardCoord(halfZ, row, 1, layout),
-			totalX + corner * 2,
-			groundTopY,
-			topY,
-			layout
-		)
-		buildRiserStep(
-			risersFolder,
-			"X",
-			rowOutwardCoord(halfZ, row, -1, layout),
-			totalX + corner * 2,
-			groundTopY,
-			topY,
-			layout
-		)
-		buildRiserStep(
-			risersFolder,
-			"Z",
-			rowOutwardCoord(halfX, row, 1, layout),
-			totalZ + corner * 2,
-			groundTopY,
-			topY,
-			layout
-		)
-		buildRiserStep(
-			risersFolder,
-			"Z",
-			rowOutwardCoord(halfX, row, -1, layout),
-			totalZ + corner * 2,
-			groundTopY,
-			topY,
-			layout
-		)
+		for _, seg in ipairs(ringSegments(halfX + reach, halfZ + reach, C.CornerChamfer)) do
+			buildRiserSegment(risersFolder, seg[1], seg[2], groundTopY, topY, layout)
+		end
 	end
 end
 
 -- ----------------------------------------------------------------------------
--- Crowd silhouettes -- person-scale, standing on each row's tread
+-- Crowd silhouettes -- person-scale, standing on each row's tread. Placed
+-- by walking along a segment's length so straight edges and diagonal
+-- corner fills use the exact same code (just a different tangent).
 -- ----------------------------------------------------------------------------
 
-local function buildFigure(
-	folder: Folder,
-	rng: Random,
-	axis: string,
-	fixedCoord: number,
-	pos: number,
-	width: number,
-	standY: number,
-	layout: { [string]: any }
-)
+local function buildFigure(folder: Folder, rng: Random, pos: Vector3, tangent: Vector3, width: number, layout: { [string]: any })
 	local C = layout.Crowd
 	local height = math.max(1, C.PersonHeight + rng:NextNumber(-C.PersonHeightJitter, C.PersonHeightJitter))
 	local torsoHeight = height * (1 - C.HeadHeightFraction)
@@ -196,19 +174,12 @@ local function buildFigure(
 	local headWidth = width * C.HeadWidthFraction
 
 	local color = C.ColorDark:Lerp(C.ColorLight, rng:NextNumber())
-	local yaw = math.rad(rng:NextNumber(-C.MaxYawJitter, C.MaxYawJitter))
+	local jitter = math.rad(rng:NextNumber(-C.MaxYawJitter, C.MaxYawJitter))
+	local yaw = math.atan2(-tangent.Z, tangent.X) + jitter
 
-	local base
-	local torsoSize, headSize
-	if axis == "X" then
-		base = CFrame.new(pos, standY, fixedCoord) * CFrame.Angles(0, yaw, 0)
-		torsoSize = Vector3.new(width, torsoHeight, C.FigureDepth)
-		headSize = Vector3.new(headWidth, headHeight, C.FigureDepth * 0.8)
-	else
-		base = CFrame.new(fixedCoord, standY, pos) * CFrame.Angles(0, yaw, 0)
-		torsoSize = Vector3.new(C.FigureDepth, torsoHeight, width)
-		headSize = Vector3.new(C.FigureDepth * 0.8, headHeight, headWidth)
-	end
+	local base = CFrame.new(pos) * CFrame.Angles(0, yaw, 0)
+	local torsoSize = Vector3.new(width, torsoHeight, C.FigureDepth)
+	local headSize = Vector3.new(headWidth, headHeight, C.FigureDepth * 0.8)
 
 	local torso = Instance.new("Part")
 	torso.Name = "Torso"
@@ -233,26 +204,34 @@ local function buildFigure(
 	head.Parent = folder
 end
 
-local function buildFigureRow(
+local function buildFigureSegment(
 	folder: Folder,
 	rng: Random,
-	axis: string,
-	fixedCoord: number,
-	rangeMin: number,
-	rangeMax: number,
+	pointA: Vector3,
+	pointB: Vector3,
 	standY: number,
 	layout: { [string]: any }
 )
 	local C = layout.Crowd
-	local pos = rangeMin
+	local delta = pointB - pointA
+	local length = delta.Magnitude
+	if length < 0.01 then
+		return
+	end
+	local tangent = delta / length
 
-	while pos < rangeMax do
+	local travelled = 0
+	while travelled < length do
 		local width = rng:NextNumber(C.FigureMinWidth, C.FigureMaxWidth)
-		local center = pos + width / 2
+		local center = travelled + width / 2
+		if center > length then
+			break
+		end
 
-		buildFigure(folder, rng, axis, fixedCoord, center, width, standY, layout)
+		local flat = pointA + tangent * center
+		buildFigure(folder, rng, Vector3.new(flat.X, standY, flat.Z), tangent, width, layout)
 
-		pos += width + C.FigureGap
+		travelled += width + C.FigureGap
 	end
 end
 
@@ -267,51 +246,14 @@ local function buildFigures(folder: Folder, layout: { [string]: any }, totalX: n
 	local halfX = totalX / 2
 	local halfZ = totalZ / 2
 	local groundTopY = layout.GroundY - layout.GroundDrop
-	local corner = C.FigureMaxWidth * 3 -- extend past corners so rows overlap and cover them
 
 	for row = 0, C.RowCount - 1 do
+		local reach = row * C.RowDepth + C.RowDepth / 2
 		local standY = groundTopY + row * C.RowRise
 
-		buildFigureRow(
-			figuresFolder,
-			rng,
-			"X",
-			rowOutwardCoord(halfZ, row, 1, layout),
-			-halfX - corner,
-			halfX + corner,
-			standY,
-			layout
-		)
-		buildFigureRow(
-			figuresFolder,
-			rng,
-			"X",
-			rowOutwardCoord(halfZ, row, -1, layout),
-			-halfX - corner,
-			halfX + corner,
-			standY,
-			layout
-		)
-		buildFigureRow(
-			figuresFolder,
-			rng,
-			"Z",
-			rowOutwardCoord(halfX, row, 1, layout),
-			-halfZ - corner,
-			halfZ + corner,
-			standY,
-			layout
-		)
-		buildFigureRow(
-			figuresFolder,
-			rng,
-			"Z",
-			rowOutwardCoord(halfX, row, -1, layout),
-			-halfZ - corner,
-			halfZ + corner,
-			standY,
-			layout
-		)
+		for _, seg in ipairs(ringSegments(halfX + reach, halfZ + reach, C.CornerChamfer)) do
+			buildFigureSegment(figuresFolder, rng, seg[1], seg[2], standY, layout)
+		end
 	end
 end
 
