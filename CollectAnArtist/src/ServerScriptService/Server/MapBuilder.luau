@@ -50,10 +50,23 @@
 				├── Backdrop     (dark cap at the very back)
 				└── SpawnerSquare (the despawner, inside the passage)
 
-	MapBuilder.build() is idempotent -- calling it again (e.g. repeatedly
-	from the Command Bar while tweaking Config values) destroys the previous
-	Map folder first, so it never leaves stale/duplicate copies behind. This
-	also lets you build a permanent, editable copy of the map straight into
+	MapBuilder.build() treats the map's pieces in two different ways:
+
+	- Systemic/parametric pieces -- Ground, ConveyorLine, Studios -- are tied
+	  directly to Config.Map numbers you might still want to retune, so
+	  they're destroyed and rebuilt from scratch on every call. Calling
+	  build() again after changing StudiosPerSide, StudioWidth, etc. always
+	  reflects the new numbers, with no stale/duplicate copies left behind.
+	- One-off aesthetic pieces -- Stages, Crowd -- are built ONCE and then
+	  left alone: build() only creates them if they don't already exist. This
+	  is so you can hand-edit, move, and add detail to the entrance stage,
+	  crowd, and tunnel directly in Studio, and re-run build() afterward
+	  (e.g. to pick up a Studios resize) without wiping that manual work. To
+	  force one of them back to its code-generated state, delete that folder
+	  in Studio first (or delete the whole Map folder to reset everything),
+	  then call build() again.
+
+	This lets you build a permanent, editable copy of the map straight into
 	the place without pressing Play: paste into the Command Bar --
 		require(game.ServerScriptService.Server.MapBuilder).build()
 ]]
@@ -113,40 +126,63 @@ local function buildGround(mapFolder: Folder, layout: { [string]: any }, totalX:
 	ground.Parent = mapFolder
 end
 
-function MapBuilder.build(): Folder
-	local existing = Workspace:FindFirstChild("Map")
+-- Destroys `name` under mapFolder if present, then hands a fresh empty
+-- folder of that name back to be filled in -- the "always rebuild" path
+-- for systemic/parametric pieces.
+local function freshFolder(mapFolder: Folder, name: string): Folder
+	local existing = mapFolder:FindFirstChild(name)
 	if existing then
 		existing:Destroy()
 	end
 
+	local folder = Instance.new("Folder")
+	folder.Name = name
+	folder.Parent = mapFolder
+	return folder
+end
+
+function MapBuilder.build(): Folder
 	local layout = buildLayout()
 	local totalX, totalZ = groundFootprint(layout)
 
-	local mapFolder = Instance.new("Folder")
-	mapFolder.Name = "Map"
-	mapFolder.Parent = Workspace
+	local mapFolder: Folder
+	local existingMap = Workspace:FindFirstChild("Map")
+	if existingMap then
+		mapFolder = existingMap :: Folder
+	else
+		mapFolder = Instance.new("Folder")
+		mapFolder.Name = "Map"
+		mapFolder.Parent = Workspace
+	end
 
+	-- Systemic/parametric: always rebuilt fresh from the current Config.
+	local existingGround = mapFolder:FindFirstChild("Ground")
+	if existingGround then
+		existingGround:Destroy()
+	end
 	buildGround(mapFolder, layout, totalX, totalZ)
 
-	local conveyorFolder = Instance.new("Folder")
-	conveyorFolder.Name = "ConveyorLine"
-	conveyorFolder.Parent = mapFolder
+	local conveyorFolder = freshFolder(mapFolder, "ConveyorLine")
 	ConveyorLine.build(conveyorFolder, layout)
 
-	local stagesFolder = Instance.new("Folder")
-	stagesFolder.Name = "Stages"
-	stagesFolder.Parent = mapFolder
-	Stages.build(stagesFolder, layout, totalZ)
-
-	local studiosFolder = Instance.new("Folder")
-	studiosFolder.Name = "Studios"
-	studiosFolder.Parent = mapFolder
+	local studiosFolder = freshFolder(mapFolder, "Studios")
 	Studios.build(studiosFolder, layout)
 
-	local crowdFolder = Instance.new("Folder")
-	crowdFolder.Name = "Crowd"
-	crowdFolder.Parent = mapFolder
-	Crowd.build(crowdFolder, layout, totalX, totalZ)
+	-- One-off aesthetic: built once, then left alone so hand edits in
+	-- Studio survive repeated calls to build().
+	if not mapFolder:FindFirstChild("Stages") then
+		local stagesFolder = Instance.new("Folder")
+		stagesFolder.Name = "Stages"
+		stagesFolder.Parent = mapFolder
+		Stages.build(stagesFolder, layout, totalZ)
+	end
+
+	if not mapFolder:FindFirstChild("Crowd") then
+		local crowdFolder = Instance.new("Folder")
+		crowdFolder.Name = "Crowd"
+		crowdFolder.Parent = mapFolder
+		Crowd.build(crowdFolder, layout, totalX, totalZ)
+	end
 
 	return mapFolder
 end

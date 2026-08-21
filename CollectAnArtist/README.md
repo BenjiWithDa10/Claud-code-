@@ -102,9 +102,22 @@ require(game.ServerScriptService.Server.MapBuilder).build()
 
 This builds the exact same map the server builds at runtime, but as regular
 parts that persist in the place and can be selected/moved/inspected without
-ever pressing Play. It's safe to re-run after tweaking `Config.luau` — each
-call clears out the previous `Map` folder first, so you never end up with
-stale duplicates.
+ever pressing Play.
+
+`MapBuilder.build()` treats two kinds of pieces differently:
+
+- **Systemic/parametric** — `Ground`, `ConveyorLine`, `Studios` — are tied
+  directly to `Config.Map` numbers you might still want to retune, so
+  they're destroyed and rebuilt from scratch on every call. It's always
+  safe to re-run `build()` after tweaking those values; you'll never end up
+  with stale duplicates.
+- **One-off aesthetic** — `Stages`, `Crowd` — are built *once* and then left
+  alone: `build()` only creates them if they don't already exist yet. This
+  means you can freely hand-edit, move, or add detail to the entrance
+  stage, the crowd/border, and the tunnel directly in Studio, and re-run
+  `build()` afterward (say, after resizing the studio grid) without losing
+  that manual work. If you ever want one of them regenerated from code
+  again, delete that folder in Studio first, then call `build()`.
 
 ## Tuning the layout
 
