@@ -9,7 +9,9 @@ kept in its own folder so the two games don't collide.
 - A central **conveyor line** (`Map.ConveyorLine.Walkway`) running down the
   middle, flush with the rest of the ground — no stairs or jumps needed.
 - An **entrance stage** and **exit stage** (`Map.Stages`), one at each end of
-  the conveyor.
+  the conveyor. Each has a `SpawnerSquare` marking where artists appear/
+  despawn, framed on three sides by a small booth (`BackWall`, `LeftWall`,
+  `RightWall`) sitting flush against the square's edges.
 - Placeholder **studio plots** (`Map.Studios.Left` / `Map.Studios.Right`),
   4 per side (8 total, the current cap), spaced well apart from each other
   and from the conveyor, facing inward toward it. Each plot is a floor + 3
@@ -35,13 +37,29 @@ rojo serve
 #    and click "Connect". The map builds itself as soon as you press Play.
 ```
 
+### Building it without pressing Play
+
+To see (and edit) the map as permanent parts in Studio's Edit mode, open the
+**Command Bar** (View tab → Command Bar) and run:
+
+```lua
+require(game.ServerScriptService.Server.MapBuilder).build()
+```
+
+This builds the exact same map the server builds at runtime, but as regular
+parts that persist in the place and can be selected/moved/inspected without
+ever pressing Play. It's safe to re-run after tweaking `Config.luau` — each
+call clears out the previous `Map` folder first, so you never end up with
+stale duplicates.
+
 ## Tuning the layout
 
 All the spacing/size numbers live in
 `src/ReplicatedStorage/Shared/Config.luau` (`Config.Map`) — e.g.
 `StudiosPerSide`, `StudioWidth`/`StudioDepth`, `StudioGap`,
-`StudioConveyorGap`, `ConveyorWidth`, `EndMargin`, and the `Mountains`
-sub-table for the border wall. The conveyor's length is derived
-automatically from the studio count and size, so proportions stay
-consistent if you change the plot count. `StudiosPerSide` is capped at 4
-(8 total) by an assertion in `Config.luau`.
+`StudioConveyorGap`, `ConveyorWidth`, `EndMargin`, the `StageSpawnerSize`/
+`StageBooth*` values for each stage's booth, and the `Mountains` sub-table
+for the border wall. The conveyor's length is derived automatically from
+the studio count and size, so proportions stay consistent if you change
+the plot count. `StudiosPerSide` is capped at 4 (8 total) by an assertion
+in `Config.luau`.

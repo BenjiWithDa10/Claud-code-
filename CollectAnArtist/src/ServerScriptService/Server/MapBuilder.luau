@@ -15,14 +15,21 @@
 		├── ConveyorLine
 		│   └── Walkway
 		├── Stages
-		│   ├── EntranceStage
-		│   └── ExitStage
+		│   ├── EntranceStage (Platform, SpawnerSquare, BackWall, Left/RightWall)
+		│   └── ExitStage     (same shape)
 		├── Studios
 		│   ├── Left
 		│   │   ├── Plot_1 ... Plot_N
 		│   └── Right
 		│       ├── Plot_1 ... Plot_N
 		└── Mountains       (border wall ringing the outside of the ground)
+
+	MapBuilder.build() is idempotent -- calling it again (e.g. repeatedly
+	from the Command Bar while tweaking Config values) destroys the previous
+	Map folder first, so it never leaves stale/duplicate copies behind. This
+	also lets you build a permanent, editable copy of the map straight into
+	the place without pressing Play: paste into the Command Bar --
+		require(game.ServerScriptService.Server.MapBuilder).build()
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -81,6 +88,11 @@ local function buildGround(mapFolder: Folder, layout: { [string]: any }, totalX:
 end
 
 function MapBuilder.build(): Folder
+	local existing = Workspace:FindFirstChild("Map")
+	if existing then
+		existing:Destroy()
+	end
+
 	local layout = buildLayout()
 	local totalX, totalZ = groundFootprint(layout)
 

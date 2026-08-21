@@ -35,20 +35,29 @@ Config.Map = {
 	StageHeight = 1,
 	StageColor = Color3.fromRGB(150, 110, 190),
 
+	-- The marked square on each stage where artists spawn in/despawn, and
+	-- the small 3-sided booth framing it (back + 2 short side walls,
+	-- flush against the square's edges -- no gap).
+	StageSpawnerSize = 18,
+	StageSpawnerMargin = 6, -- gap between the platform's outer edge and the square
+	StageBoothWallHeight = 12,
+	StageBoothWallThickness = 2,
+	StageBoothColor = Color3.fromRGB(110, 80, 145),
+
 	-- How much bare conveyor sits between the last studio plot and each stage.
 	EndMargin = 60,
 
 	-- Studio plots (evenly spaced along X on both sides of the conveyor).
 	-- Total studio count is always StudiosPerSide * 2 -- capped at 8 (4/side).
 	StudiosPerSide = 4,
-	StudioWidth = 24, -- size along X
-	StudioDepth = 36, -- size along Z, extending away from the conveyor
+	StudioWidth = 32, -- size along X
+	StudioDepth = 48, -- size along Z, extending away from the conveyor
 	StudioGap = 40, -- gap between neighboring plots along X
 	StudioConveyorGap = 30, -- open breathing room between the conveyor edge and the studio row
-	StudioFloorHeight = 1,
+	StudioFloorHeight = 2,
 	StudioFloorColor = Color3.fromRGB(210, 210, 220),
-	StudioWallHeight = 8,
-	StudioWallThickness = 1,
+	StudioWallHeight = 18,
+	StudioWallThickness = 2,
 	StudioWallColor = Color3.fromRGB(160, 160, 175),
 	SlotMarkerColor = Color3.fromRGB(255, 210, 60),
 
