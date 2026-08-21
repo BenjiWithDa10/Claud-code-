@@ -10,17 +10,19 @@
 
 	Resulting hierarchy under Workspace:
 		Map
-		├── Ground          (the lawn everything else sits on)
+		├── Ground          (the lawn everything else sits on, dropped below
+		│                    every floor so it never z-fights with them)
 		├── ConveyorLine
 		│   └── Walkway
 		├── Stages
 		│   ├── EntranceStage
 		│   └── ExitStage
-		└── Studios
-			├── Left
-			│   ├── Plot_1 ... Plot_N
-			└── Right
-				├── Plot_1 ... Plot_N
+		├── Studios
+		│   ├── Left
+		│   │   ├── Plot_1 ... Plot_N
+		│   └── Right
+		│       ├── Plot_1 ... Plot_N
+		└── Mountains       (border wall ringing the outside of the ground)
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -31,6 +33,7 @@ local Config = require(Shared.Config)
 local ConveyorLine = require(script.Parent.ConveyorLine)
 local Stages = require(script.Parent.Stages)
 local Studios = require(script.Parent.Studios)
+local Mountains = require(script.Parent.Mountains)
 
 local MapBuilder = {}
 
@@ -48,15 +51,28 @@ local function buildLayout(): { [string]: any }
 	return layout
 end
 
-local function buildGround(mapFolder: Folder, layout: { [string]: any })
+-- The ground's full footprint -- also used to place the mountain ring just
+-- outside its edges.
+local function groundFootprint(layout: { [string]: any }): (number, number)
 	local totalX = layout.ConveyorLength + 2 * layout.StageLength + 2 * layout.GroundMargin
-	local totalZ = layout.ConveyorWidth + 2 * layout.StudioDepth + 2 * layout.GroundMargin
+	local totalZ = layout.ConveyorWidth
+		+ 2 * layout.StudioConveyorGap
+		+ 2 * layout.StudioDepth
+		+ 2 * layout.GroundMargin
+	return totalX, totalZ
+end
+
+local function buildGround(mapFolder: Folder, layout: { [string]: any }, totalX: number, totalZ: number)
+	-- Top face sits GroundDrop below every floor above it, so it's never
+	-- coplanar with (and can't z-fight against) the conveyor/stage/studio
+	-- floors resting on top of it.
+	local topY = layout.GroundY - layout.GroundDrop
 
 	local ground = Instance.new("Part")
 	ground.Name = "Ground"
 	ground.Anchored = true
 	ground.Size = Vector3.new(totalX, layout.GroundThickness, totalZ)
-	ground.CFrame = CFrame.new(0, layout.GroundY - layout.GroundThickness / 2, 0)
+	ground.CFrame = CFrame.new(0, topY - layout.GroundThickness / 2, 0)
 	ground.Color = layout.GroundColor
 	ground.Material = Enum.Material.SmoothPlastic
 	ground.TopSurface = Enum.SurfaceType.Smooth
@@ -66,12 +82,13 @@ end
 
 function MapBuilder.build(): Folder
 	local layout = buildLayout()
+	local totalX, totalZ = groundFootprint(layout)
 
 	local mapFolder = Instance.new("Folder")
 	mapFolder.Name = "Map"
 	mapFolder.Parent = Workspace
 
-	buildGround(mapFolder, layout)
+	buildGround(mapFolder, layout, totalX, totalZ)
 
 	local conveyorFolder = Instance.new("Folder")
 	conveyorFolder.Name = "ConveyorLine"
@@ -87,6 +104,11 @@ function MapBuilder.build(): Folder
 	studiosFolder.Name = "Studios"
 	studiosFolder.Parent = mapFolder
 	Studios.build(studiosFolder, layout)
+
+	local mountainsFolder = Instance.new("Folder")
+	mountainsFolder.Name = "Mountains"
+	mountainsFolder.Parent = mapFolder
+	Mountains.build(mountainsFolder, layout, totalX, totalZ)
 
 	return mapFolder
 end

@@ -11,9 +11,13 @@ kept in its own folder so the two games don't collide.
 - An **entrance stage** and **exit stage** (`Map.Stages`), one at each end of
   the conveyor.
 - Placeholder **studio plots** (`Map.Studios.Left` / `Map.Studios.Right`),
-  9 per side, evenly spaced, facing inward toward the conveyor. Each plot is
-  a floor + 3 walls (open toward the conveyor) with an `ArtistSlotMarker` to
-  build the real artist-slot logic on top of later.
+  4 per side (8 total, the current cap), spaced well apart from each other
+  and from the conveyor, facing inward toward it. Each plot is a floor + 3
+  walls (open toward the conveyor) with an `ArtistSlotMarker` to build the
+  real artist-slot logic on top of later.
+- A ring of blocky **mountains** (`Map.Mountains`) around the outside of the
+  ground, so the map reads as having a natural edge instead of just an
+  invisible wall.
 
 No spawn logic or gameplay scripts yet — this is purely the greybox layout,
 built by `MapBuilder.luau` when the server starts.
@@ -35,6 +39,9 @@ rojo serve
 
 All the spacing/size numbers live in
 `src/ReplicatedStorage/Shared/Config.luau` (`Config.Map`) — e.g.
-`StudiosPerSide`, `StudioWidth`/`StudioDepth`, `ConveyorWidth`, `EndMargin`.
-The conveyor's length is derived automatically from the studio count and
-size, so proportions stay consistent if you change the plot count.
+`StudiosPerSide`, `StudioWidth`/`StudioDepth`, `StudioGap`,
+`StudioConveyorGap`, `ConveyorWidth`, `EndMargin`, and the `Mountains`
+sub-table for the border wall. The conveyor's length is derived
+automatically from the studio count and size, so proportions stay
+consistent if you change the plot count. `StudiosPerSide` is capped at 4
+(8 total) by an assertion in `Config.luau`.

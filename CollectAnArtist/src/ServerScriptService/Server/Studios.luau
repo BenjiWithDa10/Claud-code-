@@ -88,8 +88,9 @@ function Studios.build(folder: Folder, layout: { [string]: any })
 	local step = layout.StudioWidth + layout.StudioGap
 
 	local floorCenterY = layout.GroundY - layout.StudioFloorHeight / 2
-	local leftZ = -(layout.ConveyorWidth / 2 + layout.StudioDepth / 2)
-	local rightZ = layout.ConveyorWidth / 2 + layout.StudioDepth / 2
+	local innerEdge = layout.ConveyorWidth / 2 + layout.StudioConveyorGap
+	local leftZ = -(innerEdge + layout.StudioDepth / 2)
+	local rightZ = innerEdge + layout.StudioDepth / 2
 
 	for i = 0, layout.StudiosPerSide - 1 do
 		local x = startX + i * step
