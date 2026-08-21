@@ -8,18 +8,30 @@ kept in its own folder so the two games don't collide.
 
 - A central **conveyor line** (`Map.ConveyorLine.Walkway`) running down the
   middle, flush with the rest of the ground — no stairs or jumps needed.
-- A full **concert-stage complex** at the entrance end (`Map.Stages.EntranceStage`,
-  built by `EntranceStage.luau`) and a bare platform at the exit end
-  (`Map.Stages.ExitStage` — its despawner lives inside the crowd's tunnel
-  instead, see below). The entrance stage is a raised `Riser` (the flat
-  performance area) with the `SpawnerSquare` centered on it like a
-  performer's mark, a `Backdrop` behind it (a panel, two `TrussPost`s, a
-  `TrussBeam`, and a handful of hanging `Light`s), and a `Ramp` sloping down
-  from riser height to the conveyor's ground level — a main `Tread` plus
-  stepped, progressively shorter `Apron` slices on each side so the sides
-  taper down to the ground instead of a vertical drop. `Speakers` (`Left`/
-  `Right`, each a row of `Cabinet`+`Horn` stacks) flank the ramp evenly on
-  both sides.
+- A full-width **concert-stage complex** at the entrance end
+  (`Map.Stages.EntranceStage`, built by `EntranceStage.luau`), spanning the
+  *entire* west edge of the map so there's no gap to see or walk around it,
+  and a bare platform at the exit end (`Map.Stages.ExitStage` — its
+  despawner lives inside the crowd's tunnel instead, see below).
+
+  The entrance stage is a raised `Riser` (the flat performance area, sized
+  to the map's full width plus a small `SpanOverlap` margin so its ends
+  reach past the map's actual edge) with the `SpawnerSquare` centered on it
+  like a performer's mark, and a flat `Backdrop` (`Panel`) behind it. Above
+  that sits the `Canopy`: a tall angled `Roof` slab (high in the back,
+  lower in front — not a flat ceiling), held up by a `Truss` of vertical
+  `Post`s along the back edge with crisscrossing diagonal `Brace` pairs
+  between each adjacent post, plus a row of hanging `Lights` along the
+  canopy's front edge. Two `Towers` (`Left`/`Right`) anchor both ends of
+  the whole structure right at (and slightly past) the map's real edge —
+  each is a solid support tower with its own crisscross `Brace` pair on
+  the front face and a big `SpeakerCabinet`+`SpeakerHorn` stack at its
+  base, resting on top of the riser. A `Ramp` slopes down from riser height
+  to the conveyor's ground level out of the stage's center — a main
+  `Tread` plus stepped, progressively shorter `Apron` slices on each side
+  so the sides taper down to the ground instead of a vertical drop.
+  Smaller flanking `Speakers` (`Left`/`Right`, each a row of `Cabinet`+
+  `Horn` stacks) line the ramp evenly on both sides.
 - Placeholder **studio plots** (`Map.Studios.Left` / `Map.Studios.Right`),
   4 per side (8 total, the current cap), spaced well apart from each other
   and from the conveyor, facing inward toward it. Each plot is a floor + 3
@@ -100,9 +112,12 @@ All the spacing/size numbers live in
 `src/ReplicatedStorage/Shared/Config.luau` (`Config.Map`) — e.g.
 `StudiosPerSide`, `StudioWidth`/`StudioDepth`, `StudioGap`,
 `StudioConveyorGap`, `ConveyorWidth`, `EndMargin`, `StageSpawnerSize`, the
-`EntranceStage` sub-table (riser height, ramp length/width/taper, backdrop/
-truss/light sizing, speaker count/spacing) for the entrance's concert-stage
-complex, and the `Crowd` sub-table (row count/spacing/height, figure size,
+`EntranceStage` sub-table (riser height/`SpanOverlap`, ramp length/width/
+taper, backdrop sizing, canopy roof height/depth/angle, truss post count/
+thickness, hanging-light count/size/color, tower width/depth/color and
+their speaker stack sizing, and the smaller ramp-flanking speaker count/
+spacing) for the entrance's full-width concert-stage complex, and the
+`Crowd` sub-table (row count/spacing/height, figure size,
 color, transparency, the global atmosphere haze, and the `Tunnel*` values
 for the exit tunnel's size, fade and barrier/despawner insets) for the
 border. The conveyor's length is derived automatically from the studio

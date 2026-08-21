@@ -44,14 +44,19 @@ Config.Map = {
 	-- previously the exit's -- now just the entrance's).
 	StageSpawnerSize = 18,
 
-	-- The entrance's concert-stage complex: a raised riser (the flat
-	-- performance area, StageLength minus the ramp), a low ramp/walkway
-	-- sloping down from riser height to conveyor/ground level (with its
-	-- own sides tapering down to the ground rather than a vertical drop),
-	-- a backdrop + simple lighting truss behind the spawn mark, and
-	-- speakers flanking the ramp.
+	-- The entrance's full concert-stage complex: a raised riser spanning
+	-- the map's entire width (so nothing is visible past/around it), a
+	-- tall angled canopy roof on truss supports, a backdrop screen, side
+	-- towers with their own speaker stacks anchoring both ends, and the
+	-- low ramp/walkway (with its own tapered sides and small flanking
+	-- speakers) leading down from center-stage to the conveyor.
 	EntranceStage = {
 		RiserElevation = 5, -- how tall the flat stage area stands above ground/conveyor level
+
+		-- How far the whole structure extends past the ground's actual Z
+		-- edge on each side, so there's no sliver of a gap at the very
+		-- boundary a player could see or slip around.
+		SpanOverlap = 6,
 
 		-- Ramp down to the conveyor: a main tread plus a few stepped,
 		-- progressively shorter "apron" slices on each side approximating
@@ -62,20 +67,47 @@ Config.Map = {
 		RampSideTaperSegments = 3, -- stepped slices approximating each side's downward taper
 		RampThickness = 1, -- tread/apron slab thickness
 
-		-- Backdrop + lighting truss behind the spawn mark, at the back of the stage.
-		BackdropWidth = 40,
-		BackdropHeight = 20,
+		-- Backdrop screen behind the spawn mark, at the back of the stage.
+		BackdropWidth = 60,
+		BackdropHeight = 26,
 		BackdropThickness = 1,
 		BackdropColor = Color3.fromRGB(60, 45, 80),
+
+		-- Canopy: a tall roof spanning between the two side towers, angled
+		-- down from a tall back edge toward the crowd -- not a flat ceiling.
+		CanopyDepth = 40, -- how far forward (toward the conveyor) the roof extends
+		CanopyBackHeight = 38, -- roof height above stage level at the back (== tower height)
+		CanopyFrontHeight = 24, -- roof height above stage level at the front edge
+		CanopyThickness = 2,
+		CanopyColor = Color3.fromRGB(40, 40, 45),
+
+		-- The back truss wall holding up the canopy's back edge: a row of
+		-- vertical posts spanning between the two towers, with
+		-- crisscrossing diagonal bracing between each adjacent pair.
+		TrussPostCount = 6,
+		TrussPostThickness = 1.5,
+		TrussBraceThickness = 0.8,
 		TrussColor = Color3.fromRGB(40, 40, 45),
-		TrussPostThickness = 1.2,
-		TrussBeamThickness = 1,
-		TrussHeight = 22, -- height of the horizontal truss bar above stage level
-		LightCount = 5,
-		LightSize = 1.2,
+
+		-- Hanging lights along the canopy's front edge.
+		LightCount = 11,
+		LightSize = 1.4,
 		LightColor = Color3.fromRGB(255, 210, 80),
 
-		-- Speaker stacks flanking the ramp/walkway, evenly spaced.
+		-- Side support towers anchoring both ends of the structure, their
+		-- outer faces reaching the map's actual edge (+ SpanOverlap) so
+		-- there's nothing to see or walk around past them. Each carries
+		-- its own big speaker stack at the base.
+		TowerWidth = 14, -- along Z
+		TowerDepth = 10, -- along X
+		TowerColor = Color3.fromRGB(35, 35, 40),
+		TowerSpeakerWidth = 10,
+		TowerSpeakerDepth = 8,
+		TowerSpeakerCabinetHeight = 14,
+		TowerSpeakerHornHeight = 5,
+		TowerSpeakerColor = Color3.fromRGB(25, 25, 28),
+
+		-- Small speaker stacks flanking the ramp/walkway itself, evenly spaced.
 		SpeakerCount = 3, -- per side
 		SpeakerWidth = 4,
 		SpeakerDepth = 4,

@@ -32,10 +32,10 @@ local function buildPlatform(folder: Folder, name: string, centerX: number, layo
 	platform.Parent = stageFolder
 end
 
-function Stages.build(folder: Folder, layout: { [string]: any })
+function Stages.build(folder: Folder, layout: { [string]: any }, totalZ: number)
 	local halfConveyor = layout.ConveyorLength / 2
 
-	EntranceStage.build(folder, -halfConveyor - layout.StageLength / 2, layout)
+	EntranceStage.build(folder, -halfConveyor - layout.StageLength / 2, layout, totalZ)
 	buildPlatform(folder, "ExitStage", halfConveyor + layout.StageLength / 2, layout)
 end
 

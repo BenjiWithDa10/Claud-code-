@@ -15,12 +15,22 @@
 		├── ConveyorLine
 		│   └── Walkway
 		├── Stages
-		│   ├── EntranceStage (a full concert-stage complex -- see EntranceStage.luau)
-		│   │   ├── Riser          (the flat elevated performance area)
+		│   ├── EntranceStage (a full-width concert-stage complex spanning the
+		│   │                  entire west edge -- see EntranceStage.luau)
+		│   │   ├── Riser          (the flat elevated performance area, as wide
+		│   │   │                   as the map itself)
 		│   │   ├── SpawnerSquare  (center-stage spawn mark)
-		│   │   ├── Backdrop       (Panel, TrussPost x2, TrussBeam, Light x N)
+		│   │   ├── Backdrop       (just a Panel -- truss/lights live on Canopy)
+		│   │   ├── Canopy         (the tall angled roof)
+		│   │   │   ├── Roof          (one wide tilted slab)
+		│   │   │   ├── Truss         (Post x N along the back edge, plus
+		│   │   │   │                  crisscrossing Brace pairs between them)
+		│   │   │   └── Lights        (hanging Light x N along the front edge)
+		│   │   ├── Towers         (Left/Right, anchoring both ends of the
+		│   │   │                   structure at the map's actual edge)
+		│   │   │   └── Tower, Brace x2, SpeakerCabinet, SpeakerHorn (each side)
 		│   │   ├── Ramp           (Tread + tapered Apron slices down to the conveyor)
-		│   │   └── Speakers       (Left/Right, Cabinet+Horn x N each)
+		│   │   └── Speakers       (Left/Right, Cabinet+Horn x N each, flanking the ramp)
 		│   └── ExitStage     (Platform only -- its despawner lives in Crowd.Tunnel)
 		├── Studios
 		│   ├── Left
@@ -126,7 +136,7 @@ function MapBuilder.build(): Folder
 	local stagesFolder = Instance.new("Folder")
 	stagesFolder.Name = "Stages"
 	stagesFolder.Parent = mapFolder
-	Stages.build(stagesFolder, layout)
+	Stages.build(stagesFolder, layout, totalZ)
 
 	local studiosFolder = Instance.new("Folder")
 	studiosFolder.Name = "Studios"
