@@ -30,6 +30,7 @@
 			├── Figures    (many rows of person-scale dark silhouettes)
 			└── Tunnel     (a real recessed passage into the exit wall)
 				├── LeftWall/RightWall/Floor (single solid color, mouth to back)
+				├── Roof         (a handful of ribs approximating a shallow arch)
 				├── Haze         (semi-transparent cards fading toward the back)
 				├── Backdrop     (dark cap at the very back)
 				└── SpawnerSquare (the despawner, inside the passage)

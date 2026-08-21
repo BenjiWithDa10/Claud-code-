@@ -33,13 +33,14 @@ kept in its own folder so the two games don't collide.
   end and left open-ended at their west tip.
 
   The exit wall has a real stadium **player-tunnel** (`Map.Crowd.Tunnel`)
-  built into it: a recessed passage — side walls and a floor, one
-  consistent solid color throughout, no gradient — cut through the bottom
-  rows of risers/figures. The doorway is a person-scale archway
-  (`TunnelWidth` x `TunnelHeight`, 16x14 by default), squared off rather
-  than arched/rounded. Nothing is built above the doorway — rows above
-  `TunnelRows` continue uninterrupted on their own, arching over the
-  opening. The mouth-to-back darkening comes from separate semi-transparent
+  built into it: a recessed passage — side walls, a floor, and a `Roof`
+  (a handful of ribs approximating a shallow arch, tallest at the center,
+  tapering to meet the wall tops) — one consistent solid color throughout,
+  no gradient. The doorway is a person-scale archway (`TunnelWidth` x
+  `TunnelHeight`, 16x14 by default; `TunnelArchRise`/`TunnelArchSegments`
+  control the roof's curve). Rows above `TunnelRows` continue uninterrupted
+  on their own, arching over the passage. The mouth-to-back darkening comes
+  from separate semi-transparent
   `Haze` cards standing in the passage's open air (`TunnelHazeSteps` of
   them, ramping from `TunnelHazeNearTransparency` to
   `TunnelHazeFarTransparency`) rather than from the walls' own material, so

@@ -107,7 +107,14 @@ Config.Map = {
 		TunnelHeight = 14, -- clear opening height -- a proper archway, not oversized
 		TunnelRows = 3, -- how many of the bottom rows are skipped / how deep the passage is
 		TunnelWallThickness = 1.5, -- side wall / floor thickness
-		TunnelWallColor = Color3.fromRGB(50, 50, 58), -- single solid tone for the walls/floor (close to RiserColor)
+		TunnelWallColor = Color3.fromRGB(50, 50, 58), -- single solid tone for the walls/floor/roof (close to RiserColor)
+
+		-- The roof: a shallow arch (a handful of ribs, each spanning the
+		-- full depth like the walls, tallest at the center and tapering
+		-- down to meet the wall tops) instead of a flat slab, so the
+		-- passage reads as a built archway rather than a plain cutout.
+		TunnelArchRise = 2.5, -- how much taller the center of the roof is than its edges
+		TunnelArchSegments = 9, -- how many ribs approximate the curve
 
 		-- The darkening comes from separate haze cards standing inside the
 		-- passage's open air (see buildTunnelHaze), not from the walls'

@@ -22,17 +22,16 @@
 	  to blend into) and chamfered into the exit wall at their east end.
 
 	The exit wall also has a real player-tunnel built into it: a recessed
-	passage (side walls + floor, one solid color, no gradient) that cuts
-	through the bottom TunnelRows rows of risers/figures. Nothing is built
-	above the doorway -- rows above TunnelRows continue uninterrupted,
-	arching over the opening on their own. The darkening toward the back
-	comes from separate semi-transparent haze cards standing in the
-	passage's open air (see buildTunnelHaze), not from the walls' own
-	material, so it reads as a real fade into depth rather than a
-	color-graded wall. The invisible barrier follows the same notch shape
-	-- flush with the rest of the exit wall except across the tunnel's
-	width, where it steps back TunnelBarrierInset studs so players can see
-	(not walk) a short way in.
+	passage (side walls, a shallow arched roof, and a floor, all one solid
+	color, no gradient) that cuts through the bottom TunnelRows rows of
+	risers/figures. Rows above TunnelRows continue uninterrupted, arching
+	over the passage on their own. The darkening toward the back comes from
+	separate semi-transparent haze cards standing in the passage's open air
+	(see buildTunnelHaze), not from the walls' own material, so it reads as
+	a real fade into depth rather than a color-graded wall. The invisible
+	barrier follows the same notch shape -- flush with the rest of the exit
+	wall except across the tunnel's width, where it steps back
+	TunnelBarrierInset studs so players can see (not walk) a short way in.
 
 	The barrier is the only thing players can actually collide with here --
 	every riser, figure and tunnel part is CanCollide = false, purely visual.
@@ -374,6 +373,44 @@ local function buildTunnelStructure(
 	part("Floor", Vector3.new(depth, thickness, halfTunnel * 2), CFrame.new(centerX, floorY - thickness / 2, 0))
 end
 
+-- A shallow arched roof: a row of ribs, each spanning the passage's full
+-- depth like the walls do, tallest at the center and tapering down (via a
+-- parabolic profile) to meet the wall tops at the edges -- a gentle curve
+-- approximated by a handful of flat segments, not a single flat slab.
+local function buildTunnelRoof(
+	folder: Folder,
+	exitX: number,
+	depth: number,
+	halfTunnel: number,
+	floorY: number,
+	doorHeight: number,
+	thickness: number,
+	color: Color3,
+	archRise: number,
+	segments: number
+)
+	local centerX = exitX + depth / 2
+	local halfSpan = halfTunnel + thickness
+	local sliceWidth = (halfSpan * 2) / segments
+	local minRibHeight = thickness * 0.5
+
+	for i = 0, segments - 1 do
+		local z = -halfSpan + (i + 0.5) * sliceWidth
+		local u = z / halfSpan
+		local ribHeight = math.max(minRibHeight, archRise * (1 - u * u))
+
+		local rib = Instance.new("Part")
+		rib.Name = "Roof"
+		rib.Anchored = true
+		rib.CanCollide = false
+		rib.Material = Enum.Material.SmoothPlastic
+		rib.Color = color
+		rib.Size = Vector3.new(depth, ribHeight, sliceWidth)
+		rib.CFrame = CFrame.new(centerX, floorY + doorHeight + ribHeight / 2, z)
+		rib.Parent = folder
+	end
+end
+
 -- A handful of thin, increasingly opaque cards standing across the
 -- passage's clear cross-section -- looking down the tunnel, the view
 -- passes through several of these in a row, compounding into a genuine
@@ -385,10 +422,12 @@ local function buildTunnelHaze(
 	halfTunnel: number,
 	floorY: number,
 	doorHeight: number,
+	archRise: number,
 	layout: { [string]: any }
 )
 	local C = layout.Crowd
 	local steps = math.max(1, C.TunnelHazeSteps)
+	local cardHeight = doorHeight + archRise -- tall enough to cover the arch's peak too
 
 	local hazeFolder = Instance.new("Folder")
 	hazeFolder.Name = "Haze"
@@ -406,8 +445,8 @@ local function buildTunnelHaze(
 		card.Color = C.TunnelColor
 		card.Transparency = C.TunnelHazeNearTransparency
 			+ (C.TunnelHazeFarTransparency - C.TunnelHazeNearTransparency) * t
-		card.Size = Vector3.new(0.2, doorHeight, halfTunnel * 2)
-		card.CFrame = CFrame.new(x, floorY + doorHeight / 2, 0)
+		card.Size = Vector3.new(0.2, cardHeight, halfTunnel * 2)
+		card.CFrame = CFrame.new(x, floorY + cardHeight / 2, 0)
 		card.Parent = hazeFolder
 	end
 end
@@ -428,18 +467,32 @@ local function buildTunnel(folder: Folder, layout: { [string]: any })
 	local doorHeight = C.TunnelHeight
 
 	buildTunnelStructure(tunnelFolder, exitX, depth, halfTunnel, floorY, doorHeight, thickness, C.TunnelWallColor)
-	buildTunnelHaze(tunnelFolder, exitX, depth, halfTunnel, floorY, doorHeight, layout)
+	buildTunnelRoof(
+		tunnelFolder,
+		exitX,
+		depth,
+		halfTunnel,
+		floorY,
+		doorHeight,
+		thickness,
+		C.TunnelWallColor,
+		C.TunnelArchRise,
+		C.TunnelArchSegments
+	)
+	buildTunnelHaze(tunnelFolder, exitX, depth, halfTunnel, floorY, doorHeight, C.TunnelArchRise, layout)
 
-	-- Dark cap at the very back of the doorway, so the passage reads as
-	-- ending in darkness rather than showing through to whatever's beyond it.
+	-- Dark cap at the very back of the doorway, tall enough to reach the
+	-- arch's peak too, so the passage reads as ending in darkness rather
+	-- than showing through to whatever's beyond it.
+	local capHeight = doorHeight + C.TunnelArchRise
 	local cap = Instance.new("Part")
 	cap.Name = "Backdrop"
 	cap.Anchored = true
 	cap.CanCollide = false
 	cap.Material = Enum.Material.SmoothPlastic
 	cap.Color = C.TunnelColor
-	cap.Size = Vector3.new(thickness, doorHeight, halfTunnel * 2)
-	cap.CFrame = CFrame.new(exitX + depth, floorY + doorHeight / 2, 0)
+	cap.Size = Vector3.new(thickness, capHeight, halfTunnel * 2)
+	cap.CFrame = CFrame.new(exitX + depth, floorY + capHeight / 2, 0)
 	cap.Parent = tunnelFolder
 
 	-- The despawner itself, sized to fit the doorway and sitting inside
