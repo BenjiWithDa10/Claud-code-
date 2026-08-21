@@ -17,18 +17,20 @@ kept in its own folder so the two games don't collide.
   and from the conveyor, facing inward toward it. Each plot is a floor + 3
   walls (open toward the conveyor) with an `ArtistSlotMarker` to build the
   real artist-slot logic on top of later.
-- A stylized static **crowd** (`Map.Crowd`) ringing the outside of the ground,
-  built like real stadium seating: an invisible collision `Barrier` right at
-  the map's edge (players can't walk into or past it), solid ascending
-  `Risers` behind it, and many rows (10 by default) of small, person-scale
-  dark silhouette `Figures` standing on top of each riser — height comes
-  from stacking rows, not from oversized figures, so it reads as layers of
-  people rather than a few flat panels. Each row's 4 straight edges are
-  chamfered with a diagonal fill at every corner, so the risers and figures
-  wrap around the map's perimeter smoothly instead of meeting at a hard
-  right angle. No animation/cheering or day-night reaction yet — those are
-  future hooks — but the whole look is config-driven via `Config.Map.Crowd`
-  so they're easy to add later.
+- A stylized static **crowd** (`Map.Crowd`) built like real stadium seating:
+  an invisible collision `Barrier`, solid ascending `Risers`, and many rows
+  (10 by default) of small, person-scale dark silhouette `Figures` standing
+  on top of each riser — height comes from stacking rows, not from oversized
+  figures, so it reads as layers of people rather than a few flat panels.
+  The ring is a **"C" shape, not a closed loop**: it's completely open
+  behind the entrance stage (west end, where artists spawn in — an open
+  performance-stage backdrop, no crowd or barrier at all) and pulled in
+  tight against the exit stage's platform edge (east end, where artists
+  despawn) so there's no walkable space behind the despawner. The two long
+  sides (studios) are unchanged, chamfered into the exit wall at their east
+  end and left open-ended at their west tip. No animation/cheering or
+  day-night reaction yet — those are future hooks — but the whole look is
+  config-driven via `Config.Map.Crowd` so they're easy to add later.
 
 No spawn logic or gameplay scripts yet — this is purely the greybox layout,
 built by `MapBuilder.luau` when the server starts.

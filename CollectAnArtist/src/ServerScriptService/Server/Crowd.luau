@@ -9,10 +9,17 @@
 	comes from stacking many modest rows, not from oversized figures -- that
 	way it reads as layers of people rather than a few flat panels.
 
-	Each row's outline is 4 straight edges with a diagonal chamfer at every
-	corner (instead of the edges meeting at a hard right angle), so risers
-	and figures both wrap smoothly around the map instead of looking like 4
-	separate walls butted together.
+	The ring is a "C" shape, not a closed loop:
+	- The entrance stage's end (west, -X, where artists spawn in) is left
+	  completely open -- no crowd, no barrier. It reads as the open
+	  performance-stage/backstage direction rather than a walled-off edge.
+	- The exit stage's end (east, +X, where artists despawn) is pulled in
+	  tight against the stage's own platform edge instead of sitting out at
+	  the far ground edge, so there's no walkable space behind the
+	  despawner.
+	- The long sides (north/south, where the studios are) are unchanged,
+	  running the full ground edge -- open-ended at their west tip (nothing
+	  to blend into) and chamfered into the exit wall at their east end.
 
 	The barrier is the only thing players can actually collide with here --
 	every riser and figure is CanCollide = false, purely visual.
@@ -28,41 +35,40 @@ local Lighting = game:GetService("Lighting")
 
 local Crowd = {}
 
--- ----------------------------------------------------------------------------
--- Ring geometry: each row's outline as 8 segments (N/E/S/W straights, each
--- trimmed back by CornerChamfer, plus a diagonal fill at each corner).
--- Points are Vector3 with Y left at 0 -- callers supply the row's height.
--- ----------------------------------------------------------------------------
+-- Where the exit (east) wall/crowd sits: right behind the exit stage's own
+-- platform, not out at the far ground edge.
+local function exitWallX(layout: { [string]: any }): number
+	local halfConveyor = layout.ConveyorLength / 2
+	return halfConveyor + layout.StageLength + layout.Crowd.ExitWallBuffer
+end
 
-local function ringSegments(halfX: number, halfZ: number, chamfer: number): { { Vector3 } }
-	local nearX, nearZ = halfX - chamfer, halfZ - chamfer
+-- A row's outline as a "C" shape open at the west (entrance) end: a North
+-- wall, a chamfered NE corner, the East (exit) wall, a chamfered SE corner,
+-- and a South wall. No segment at all on the west -- that end is open.
+local function rowSegments(halfX: number, halfZ: number, exitX: number, chamfer: number): { { Vector3 } }
+	local nearExitX = exitX - chamfer
+	local nearZ = halfZ - chamfer
 
 	return {
-		-- Straight edges.
-		{ Vector3.new(-nearX, 0, halfZ), Vector3.new(nearX, 0, halfZ) }, -- North
-		{ Vector3.new(nearX, 0, -halfZ), Vector3.new(-nearX, 0, -halfZ) }, -- South
-		{ Vector3.new(halfX, 0, -nearZ), Vector3.new(halfX, 0, nearZ) }, -- East
-		{ Vector3.new(-halfX, 0, nearZ), Vector3.new(-halfX, 0, -nearZ) }, -- West
-		-- Diagonal corner fills, each connecting the ends of the two
-		-- straights that would otherwise meet at a hard right angle.
-		{ Vector3.new(nearX, 0, halfZ), Vector3.new(halfX, 0, nearZ) }, -- NE
-		{ Vector3.new(-nearX, 0, halfZ), Vector3.new(-halfX, 0, nearZ) }, -- NW
-		{ Vector3.new(-nearX, 0, -halfZ), Vector3.new(-halfX, 0, -nearZ) }, -- SW
-		{ Vector3.new(nearX, 0, -halfZ), Vector3.new(halfX, 0, -nearZ) }, -- SE
+		{ Vector3.new(-halfX, 0, halfZ), Vector3.new(nearExitX, 0, halfZ) }, -- North
+		{ Vector3.new(nearExitX, 0, halfZ), Vector3.new(exitX, 0, nearZ) }, -- NE chamfer
+		{ Vector3.new(exitX, 0, nearZ), Vector3.new(exitX, 0, -nearZ) }, -- Exit wall
+		{ Vector3.new(exitX, 0, -nearZ), Vector3.new(nearExitX, 0, -halfZ) }, -- SE chamfer
+		{ Vector3.new(nearExitX, 0, -halfZ), Vector3.new(-halfX, 0, -halfZ) }, -- South
 	}
 end
 
 -- ----------------------------------------------------------------------------
--- Invisible barrier (unchanged square corners -- it's invisible, so the
--- hard corner has no visual impact, and the overlap already guarantees no
--- collision gap).
+-- Invisible barrier: no wall at all on the entrance (west) end, closed
+-- tight behind the exit stage's despawner on the east end.
 -- ----------------------------------------------------------------------------
 
 local function buildBarrierWall(
 	folder: Folder,
 	axis: string,
 	fixedCoord: number,
-	length: number,
+	freeMin: number,
+	freeMax: number,
 	layout: { [string]: any }
 )
 	local C = layout.Crowd
@@ -71,6 +77,8 @@ local function buildBarrierWall(
 	local topY = groundTopY + C.BarrierHeight
 	local sizeY = topY - bottomY
 	local centerY = (bottomY + topY) / 2
+	local length = freeMax - freeMin
+	local center = (freeMin + freeMax) / 2
 
 	local wall = Instance.new("Part")
 	wall.Name = "Barrier"
@@ -81,10 +89,10 @@ local function buildBarrierWall(
 
 	if axis == "X" then
 		wall.Size = Vector3.new(length, sizeY, C.BarrierThickness)
-		wall.CFrame = CFrame.new(0, centerY, fixedCoord)
+		wall.CFrame = CFrame.new(center, centerY, fixedCoord)
 	else
 		wall.Size = Vector3.new(C.BarrierThickness, sizeY, length)
-		wall.CFrame = CFrame.new(fixedCoord, centerY, 0)
+		wall.CFrame = CFrame.new(fixedCoord, centerY, center)
 	end
 
 	wall.Parent = folder
@@ -98,20 +106,22 @@ local function buildBarrier(folder: Folder, layout: { [string]: any }, totalX: n
 	local C = layout.Crowd
 	local halfX = totalX / 2
 	local halfZ = totalZ / 2
-	-- Extend each wall past its corners so the four walls overlap and never
-	-- leave a gap a player could slip through.
+	local exitX = exitWallX(layout)
+	-- Extend past corners so the walls overlap and never leave a collision gap.
 	local corner = C.BarrierThickness * 2
 
-	buildBarrierWall(barrierFolder, "X", halfZ, totalX + corner * 2, layout)
-	buildBarrierWall(barrierFolder, "X", -halfZ, totalX + corner * 2, layout)
-	buildBarrierWall(barrierFolder, "Z", halfX, totalZ + corner * 2, layout)
-	buildBarrierWall(barrierFolder, "Z", -halfX, totalZ + corner * 2, layout)
+	-- North & South: open at the west (entrance) tip, closed against the exit wall.
+	buildBarrierWall(barrierFolder, "X", halfZ, -halfX - corner, exitX + corner, layout)
+	buildBarrierWall(barrierFolder, "X", -halfZ, -halfX - corner, exitX + corner, layout)
+	-- Exit wall, right behind the despawner.
+	buildBarrierWall(barrierFolder, "Z", exitX, -halfZ - corner, halfZ + corner, layout)
+	-- No west wall -- the entrance end is deliberately left open.
 end
 
 -- ----------------------------------------------------------------------------
 -- Risers -- solid ascending steps each row of figures stands on. Built
--- from the same 8-segment ring outline as the figures, so the riser mass
--- itself is chamfered at the corners too.
+-- from the same ring outline as the figures, so the riser mass itself
+-- follows the same open-west/tight-east shape and corner chamfers.
 -- ----------------------------------------------------------------------------
 
 local function buildRiserSegment(folder: Folder, pointA: Vector3, pointB: Vector3, bottomY: number, topY: number, layout: { [string]: any })
@@ -148,13 +158,14 @@ local function buildRisers(folder: Folder, layout: { [string]: any }, totalX: nu
 	local C = layout.Crowd
 	local halfX = totalX / 2
 	local halfZ = totalZ / 2
+	local exitX = exitWallX(layout)
 	local groundTopY = layout.GroundY - layout.GroundDrop
 
 	for row = 1, C.RowCount - 1 do
 		local reach = row * C.RowDepth + C.RowDepth / 2
 		local topY = groundTopY + row * C.RowRise
 
-		for _, seg in ipairs(ringSegments(halfX + reach, halfZ + reach, C.CornerChamfer)) do
+		for _, seg in ipairs(rowSegments(halfX + reach, halfZ + reach, exitX + reach, C.CornerChamfer)) do
 			buildRiserSegment(risersFolder, seg[1], seg[2], groundTopY, topY, layout)
 		end
 	end
@@ -245,13 +256,14 @@ local function buildFigures(folder: Folder, layout: { [string]: any }, totalX: n
 
 	local halfX = totalX / 2
 	local halfZ = totalZ / 2
+	local exitX = exitWallX(layout)
 	local groundTopY = layout.GroundY - layout.GroundDrop
 
 	for row = 0, C.RowCount - 1 do
 		local reach = row * C.RowDepth + C.RowDepth / 2
 		local standY = groundTopY + row * C.RowRise
 
-		for _, seg in ipairs(ringSegments(halfX + reach, halfZ + reach, C.CornerChamfer)) do
+		for _, seg in ipairs(rowSegments(halfX + reach, halfZ + reach, exitX + reach, C.CornerChamfer)) do
 			buildFigureSegment(figuresFolder, rng, seg[1], seg[2], standY, layout)
 		end
 	end
@@ -281,8 +293,8 @@ local function applyAtmosphere(layout: { [string]: any })
 	atmosphere.Glare = C.AtmosphereGlare
 end
 
--- totalX/totalZ are the ground plane's full footprint -- the barrier sits
--- right on its edge, and the risers/crowd climb upward just beyond that.
+-- totalX/totalZ are the ground plane's full footprint -- the barrier and
+-- risers/crowd follow the "C" shape described above.
 function Crowd.build(folder: Folder, layout: { [string]: any }, totalX: number, totalZ: number)
 	buildBarrier(folder, layout, totalX, totalZ)
 	buildRisers(folder, layout, totalX, totalZ)

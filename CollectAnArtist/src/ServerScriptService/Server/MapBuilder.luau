@@ -22,8 +22,9 @@
 		│   │   ├── Plot_1 ... Plot_N
 		│   └── Right
 		│       ├── Plot_1 ... Plot_N
-		└── Crowd
-			├── Barrier    (invisible collision walls right at the ground's edge)
+		└── Crowd          (a "C" shape: open behind the entrance stage, closed
+		                    tight behind the exit stage -- see Crowd.luau)
+			├── Barrier    (invisible collision walls; none on the entrance end)
 			├── Risers     (solid ascending steps each row of figures stands on)
 			└── Figures    (many rows of person-scale dark silhouettes)
 
