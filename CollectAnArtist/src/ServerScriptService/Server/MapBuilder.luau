@@ -50,24 +50,31 @@
 				├── Backdrop     (dark cap at the very back)
 				└── SpawnerSquare (the despawner, inside the passage)
 
-	MapBuilder.build() treats the map's pieces in two different ways:
+	The map's pieces split into two tiers, and two different entry points:
 
 	- Systemic/parametric pieces -- Ground, ConveyorLine, Studios -- are tied
 	  directly to Config.Map numbers you might still want to retune, so
-	  they're destroyed and rebuilt from scratch on every call. Calling
-	  build() again after changing StudiosPerSide, StudioWidth, etc. always
-	  reflects the new numbers, with no stale/duplicate copies left behind.
-	- One-off aesthetic pieces -- Stages, Crowd -- are built ONCE and then
-	  left alone: build() only creates them if they don't already exist. This
-	  is so you can hand-edit, move, and add detail to the entrance stage,
-	  crowd, and tunnel directly in Studio, and re-run build() afterward
-	  (e.g. to pick up a Studios resize) without wiping that manual work. To
-	  force one of them back to its code-generated state, delete that folder
-	  in Studio first (or delete the whole Map folder to reset everything),
-	  then call build() again.
+	  they're destroyed and rebuilt from scratch every time either entry
+	  point below runs.
+	- One-off aesthetic pieces -- Stages, Crowd -- are treated as permanent,
+	  hand-built content once they exist: built ONCE via Command Bar, then
+	  meant to be hand-edited, moved, and detailed directly in Studio and
+	  never regenerated except on purpose.
 
-	This lets you build a permanent, editable copy of the map straight into
-	the place without pressing Play: paste into the Command Bar --
+	MapBuilder.buildRuntime() rebuilds only the systemic tier and never
+	touches Stages/Crowd at all -- doesn't rebuild them, doesn't even create
+	them if they're missing. This is what init.server.luau calls on every
+	server start (including every Play session), so pressing Play can never
+	wipe or otherwise disturb your manually-placed entrance stage, crowd, or
+	tunnel -- whatever's already sitting in Workspace.Map.Stages/Crowd when
+	Play starts is exactly what you'll see once it starts running.
+
+	MapBuilder.build() is the manual, Command-Bar-only entry point: it does
+	everything buildRuntime() does, PLUS creates Stages/Crowd if they don't
+	already exist yet (leaving them alone if they do). Use it once to lay
+	down the first code-generated copy of the entrance stage/crowd, or again
+	after deliberately deleting one of those folders in Studio to regenerate
+	it from scratch:
 		require(game.ServerScriptService.Server.MapBuilder).build()
 ]]
 
@@ -141,21 +148,25 @@ local function freshFolder(mapFolder: Folder, name: string): Folder
 	return folder
 end
 
-function MapBuilder.build(): Folder
-	local layout = buildLayout()
-	local totalX, totalZ = groundFootprint(layout)
-
-	local mapFolder: Folder
+local function getOrCreateMapFolder(): Folder
 	local existingMap = Workspace:FindFirstChild("Map")
 	if existingMap then
-		mapFolder = existingMap :: Folder
-	else
-		mapFolder = Instance.new("Folder")
-		mapFolder.Name = "Map"
-		mapFolder.Parent = Workspace
+		return existingMap :: Folder
 	end
 
-	-- Systemic/parametric: always rebuilt fresh from the current Config.
+	local mapFolder = Instance.new("Folder")
+	mapFolder.Name = "Map"
+	mapFolder.Parent = Workspace
+	return mapFolder
+end
+
+-- Rebuilds only the systemic/parametric tier (Ground, ConveyorLine,
+-- Studios) fresh from the current Config -- never touches Stages/Crowd.
+function MapBuilder.buildRuntime(): Folder
+	local layout = buildLayout()
+	local totalX, totalZ = groundFootprint(layout)
+	local mapFolder = getOrCreateMapFolder()
+
 	local existingGround = mapFolder:FindFirstChild("Ground")
 	if existingGround then
 		existingGround:Destroy()
@@ -168,8 +179,16 @@ function MapBuilder.build(): Folder
 	local studiosFolder = freshFolder(mapFolder, "Studios")
 	Studios.build(studiosFolder, layout)
 
-	-- One-off aesthetic: built once, then left alone so hand edits in
-	-- Studio survive repeated calls to build().
+	return mapFolder
+end
+
+-- Manual, Command-Bar-only: does everything buildRuntime() does, plus lays
+-- down Stages/Crowd if (and only if) they don't already exist.
+function MapBuilder.build(): Folder
+	local layout = buildLayout()
+	local totalX, totalZ = groundFootprint(layout)
+	local mapFolder = MapBuilder.buildRuntime()
+
 	if not mapFolder:FindFirstChild("Stages") then
 		local stagesFolder = Instance.new("Folder")
 		stagesFolder.Name = "Stages"

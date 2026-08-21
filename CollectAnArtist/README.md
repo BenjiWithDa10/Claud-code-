@@ -91,33 +91,37 @@ rojo serve
 #    and click "Connect". The map builds itself as soon as you press Play.
 ```
 
-### Building it without pressing Play
+Pressing Play only ever calls `MapBuilder.buildRuntime()` (via
+`init.server.luau`), which rebuilds **just** the systemic/parametric pieces
+— `Ground`, `ConveyorLine`, `Studios` — tied directly to `Config.Map`
+numbers you might still want to retune. It never touches `Stages` or
+`Crowd` at all: it won't rebuild them, and it won't even create them if
+they're missing. Whatever's already sitting in `Workspace.Map.Stages`/
+`Crowd` when you press Play is exactly what you'll see once it starts
+running, so your hand-built entrance stage, crowd, and tunnel are safe
+across every Play session.
 
-To see (and edit) the map as permanent parts in Studio's Edit mode, open the
-**Command Bar** (View tab → Command Bar) and run:
+### Building the aesthetic pieces (Command Bar only)
+
+`Stages` (the entrance stage) and `Crowd` (the crowd/border/tunnel) are
+treated as permanent, one-off hand-built content — they're only ever
+created by explicitly running the full builder from the **Command Bar**
+(View tab → Command Bar), never automatically at runtime:
 
 ```lua
 require(game.ServerScriptService.Server.MapBuilder).build()
 ```
 
-This builds the exact same map the server builds at runtime, but as regular
-parts that persist in the place and can be selected/moved/inspected without
-ever pressing Play.
-
-`MapBuilder.build()` treats two kinds of pieces differently:
-
-- **Systemic/parametric** — `Ground`, `ConveyorLine`, `Studios` — are tied
-  directly to `Config.Map` numbers you might still want to retune, so
-  they're destroyed and rebuilt from scratch on every call. It's always
-  safe to re-run `build()` after tweaking those values; you'll never end up
-  with stale duplicates.
-- **One-off aesthetic** — `Stages`, `Crowd` — are built *once* and then left
-  alone: `build()` only creates them if they don't already exist yet. This
-  means you can freely hand-edit, move, or add detail to the entrance
-  stage, the crowd/border, and the tunnel directly in Studio, and re-run
-  `build()` afterward (say, after resizing the studio grid) without losing
-  that manual work. If you ever want one of them regenerated from code
-  again, delete that folder in Studio first, then call `build()`.
+`MapBuilder.build()` does everything `buildRuntime()` does (rebuilding the
+systemic tier), PLUS creates `Stages`/`Crowd` if they don't already exist
+yet — leaving them alone if they do. Run it once to lay down the first
+code-generated copy of the entrance stage/crowd as permanent parts you can
+select/move/inspect without ever pressing Play; after that, feel free to
+hand-edit, move, or add detail to them directly in Studio. Re-running
+`build()` later (say, after resizing the studio grid) never touches them
+again once they exist. If you ever want one of them regenerated from code
+from scratch, delete that folder in Studio first, then call `build()`
+again.
 
 ## Tuning the layout
 
