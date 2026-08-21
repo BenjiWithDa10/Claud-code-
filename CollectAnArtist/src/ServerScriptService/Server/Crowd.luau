@@ -22,13 +22,17 @@
 	  to blend into) and chamfered into the exit wall at their east end.
 
 	The exit wall also has a real player-tunnel built into it: a recessed
-	passage (side walls, ceiling, floor) that cuts through the bottom
-	TunnelRows rows of risers/figures, fading from a lit grey at the mouth
-	to near-black at the back, with the despawner sitting inside it. Rows
-	above TunnelRows continue uninterrupted, arching over the opening. The
-	invisible barrier follows the same notch shape -- flush with the rest
-	of the exit wall except across the tunnel's width, where it steps back
-	TunnelBarrierInset studs so players can see (not walk) a short way in.
+	passage (side walls + floor, one solid color, no gradient) that cuts
+	through the bottom TunnelRows rows of risers/figures. Nothing is built
+	above the doorway -- rows above TunnelRows continue uninterrupted,
+	arching over the opening on their own. The darkening toward the back
+	comes from separate semi-transparent haze cards standing in the
+	passage's open air (see buildTunnelHaze), not from the walls' own
+	material, so it reads as a real fade into depth rather than a
+	color-graded wall. The invisible barrier follows the same notch shape
+	-- flush with the rest of the exit wall except across the tunnel's
+	width, where it steps back TunnelBarrierInset studs so players can see
+	(not walk) a short way in.
 
 	The barrier is the only thing players can actually collide with here --
 	every riser, figure and tunnel part is CanCollide = false, purely visual.
@@ -51,12 +55,11 @@ local function exitWallX(layout: { [string]: any }): number
 	return halfConveyor + layout.StageLength + layout.Crowd.ExitWallBuffer
 end
 
--- The tunnel's mouth X, total carved depth, the full height of the carved
--- slice (taller than the doorway itself -- see TunnelHeight/the lintel in
--- buildTunnel), and half-width -- derived from how many rows it cuts through.
-local function tunnelGeometry(layout: { [string]: any }): (number, number, number, number)
+-- The tunnel's mouth X, total depth (how many rows it's cut through), and
+-- half-width.
+local function tunnelGeometry(layout: { [string]: any }): (number, number, number)
 	local C = layout.Crowd
-	return exitWallX(layout), C.TunnelRows * C.RowDepth, C.TunnelRows * C.RowRise, C.TunnelWidth / 2
+	return exitWallX(layout), C.TunnelRows * C.RowDepth, C.TunnelWidth / 2
 end
 
 -- The North/NE-chamfer/SE-chamfer/South segments of a row's outline -- the
@@ -142,7 +145,7 @@ local function buildBarrier(folder: Folder, layout: { [string]: any }, totalX: n
 	local C = layout.Crowd
 	local halfX = totalX / 2
 	local halfZ = totalZ / 2
-	local exitX, _, _, halfTunnel = tunnelGeometry(layout)
+	local exitX, _, halfTunnel = tunnelGeometry(layout)
 	local innerX = exitX + C.TunnelBarrierInset
 	-- Extend past corners so the walls overlap and never leave a collision gap.
 	local corner = C.BarrierThickness * 2
@@ -283,7 +286,11 @@ local function buildFigureSegment(
 	while travelled < length do
 		local width = rng:NextNumber(C.FigureMinWidth, C.FigureMaxWidth)
 		local center = travelled + width / 2
-		if center > length then
+		-- Check the figure's far edge, not just its center -- otherwise a
+		-- figure near the end of a segment can have its body overshoot
+		-- past the segment's true endpoint (e.g. into the tunnel's clear
+		-- width on the flanking exit-wall segments).
+		if center + width / 2 > length then
 			break
 		end
 
@@ -323,76 +330,86 @@ end
 
 -- ----------------------------------------------------------------------------
 -- Tunnel -- a real recessed passage leading into the crowd structure: a
--- person-scale doorway (side walls sized to TunnelHeight) topped by a
--- thick lintel that fills the rest of the carved-out slice up to where the
--- crowd rows arch over, so it reads as running under the stands rather
--- than a box poking through the wall. Fades from lit grey to near-black
--- via many small color+transparency steps rather than a few flat bands,
--- with the despawner sitting inside it.
+-- person-scale doorway (side walls + floor, one consistent solid color,
+-- no gradient) with nothing built above it -- the ordinary crowd rows
+-- arching over past TunnelRows are what's visible there. The darkening
+-- comes from separate haze cards standing in the passage's open air, not
+-- from the walls' own material, with the despawner sitting inside it.
 -- ----------------------------------------------------------------------------
 
-local function buildTunnelSegment(
+local function buildTunnelStructure(
 	folder: Folder,
-	segStartX: number,
-	segEndX: number,
+	exitX: number,
+	depth: number,
 	halfTunnel: number,
 	floorY: number,
 	doorHeight: number,
-	cutHeight: number,
 	thickness: number,
-	color: Color3,
-	wallTransparency: number
+	color: Color3
 )
-	local length = segEndX - segStartX
-	local centerX = (segStartX + segEndX) / 2
+	local centerX = exitX + depth / 2
 
-	local function part(name: string, size: Vector3, cframe: CFrame, transparency: number)
+	local function part(name: string, size: Vector3, cframe: CFrame)
 		local p = Instance.new("Part")
 		p.Name = name
 		p.Anchored = true
 		p.CanCollide = false
 		p.Material = Enum.Material.SmoothPlastic
 		p.Color = color
-		p.Transparency = transparency
 		p.Size = size
 		p.CFrame = cframe
 		p.Parent = folder
 	end
 
-	-- The doorway's own walls -- these get the fade transparency, since
-	-- they're what the player is actually looking down the length of.
 	part(
 		"LeftWall",
-		Vector3.new(length, doorHeight, thickness),
-		CFrame.new(centerX, floorY + doorHeight / 2, -halfTunnel - thickness / 2),
-		wallTransparency
+		Vector3.new(depth, doorHeight, thickness),
+		CFrame.new(centerX, floorY + doorHeight / 2, -halfTunnel - thickness / 2)
 	)
 	part(
 		"RightWall",
-		Vector3.new(length, doorHeight, thickness),
-		CFrame.new(centerX, floorY + doorHeight / 2, halfTunnel + thickness / 2),
-		wallTransparency
+		Vector3.new(depth, doorHeight, thickness),
+		CFrame.new(centerX, floorY + doorHeight / 2, halfTunnel + thickness / 2)
 	)
+	part("Floor", Vector3.new(depth, thickness, halfTunnel * 2), CFrame.new(centerX, floorY - thickness / 2, 0))
+end
 
-	-- A solid, opaque lintel filling everything from the doorway's top up
-	-- to the carved slice's full height -- this is what sells "running
-	-- under the stands" instead of "a short box poking through the wall".
-	local lintelHeight = cutHeight - doorHeight
-	if lintelHeight > 0 then
-		part(
-			"Ceiling",
-			Vector3.new(length, lintelHeight, halfTunnel * 2 + thickness * 2),
-			CFrame.new(centerX, floorY + doorHeight + lintelHeight / 2, 0),
-			0
-		)
+-- A handful of thin, increasingly opaque cards standing across the
+-- passage's clear cross-section -- looking down the tunnel, the view
+-- passes through several of these in a row, compounding into a genuine
+-- fade toward darkness instead of a single flat-colored surface.
+local function buildTunnelHaze(
+	folder: Folder,
+	exitX: number,
+	depth: number,
+	halfTunnel: number,
+	floorY: number,
+	doorHeight: number,
+	layout: { [string]: any }
+)
+	local C = layout.Crowd
+	local steps = math.max(1, C.TunnelHazeSteps)
+
+	local hazeFolder = Instance.new("Folder")
+	hazeFolder.Name = "Haze"
+	hazeFolder.Parent = folder
+
+	for i = 1, steps do
+		local t = steps > 1 and (i - 1) / (steps - 1) or 1
+		local x = exitX + (i / (steps + 1)) * depth
+
+		local card = Instance.new("Part")
+		card.Name = "HazeCard"
+		card.Anchored = true
+		card.CanCollide = false
+		card.Material = Enum.Material.SmoothPlastic
+		card.Color = C.TunnelColor
+		card.Transparency = C.TunnelHazeNearTransparency
+			+ (C.TunnelHazeFarTransparency - C.TunnelHazeNearTransparency) * t
+		card.Size = Vector3.new(0.2, doorHeight, halfTunnel * 2)
+		card.CFrame = CFrame.new(x, floorY + doorHeight / 2, 0)
+		card.Parent = hazeFolder
 	end
-
-	part(
-		"Floor",
-		Vector3.new(length, thickness, halfTunnel * 2),
-		CFrame.new(centerX, floorY - thickness / 2, 0),
-		0
-	)
 end
 
 local function buildTunnel(folder: Folder, layout: { [string]: any })
@@ -405,31 +422,16 @@ local function buildTunnel(folder: Folder, layout: { [string]: any })
 	tunnelFolder.Name = "Tunnel"
 	tunnelFolder.Parent = folder
 
-	local exitX, depth, cutHeight, halfTunnel = tunnelGeometry(layout)
+	local exitX, depth, halfTunnel = tunnelGeometry(layout)
 	local floorY = layout.GroundY
 	local thickness = C.TunnelWallThickness
 	local doorHeight = C.TunnelHeight
 
-	-- Mouth-to-back fade, built from many small color+transparency steps
-	-- so it reads as a continuous darkening rather than visible bands.
-	local steps = math.max(1, C.TunnelFadeSteps)
-	for i = 0, steps - 1 do
-		local segStartX = exitX + (i / steps) * depth
-		local segEndX = exitX + ((i + 1) / steps) * depth
-		local t = 1
-		if steps > 1 then
-			t = i / (steps - 1)
-		end
-		local color = C.TunnelWallColor:Lerp(C.TunnelColor, t)
-		local wallTransparency = t * C.TunnelMaxFadeTransparency
-
-		buildTunnelSegment(tunnelFolder, segStartX, segEndX, halfTunnel, floorY, doorHeight, cutHeight, thickness, color, wallTransparency)
-	end
+	buildTunnelStructure(tunnelFolder, exitX, depth, halfTunnel, floorY, doorHeight, thickness, C.TunnelWallColor)
+	buildTunnelHaze(tunnelFolder, exitX, depth, halfTunnel, floorY, doorHeight, layout)
 
 	-- Dark cap at the very back of the doorway, so the passage reads as
-	-- ending in darkness rather than showing through to whatever's beyond
-	-- it. (The lintel above is already sealed by the last segment's own
-	-- Ceiling piece.)
+	-- ending in darkness rather than showing through to whatever's beyond it.
 	local cap = Instance.new("Part")
 	cap.Name = "Backdrop"
 	cap.Anchored = true
@@ -440,9 +442,9 @@ local function buildTunnel(folder: Folder, layout: { [string]: any })
 	cap.CFrame = CFrame.new(exitX + depth, floorY + doorHeight / 2, 0)
 	cap.Parent = tunnelFolder
 
-	-- The despawner itself, sized to fit the smaller doorway and sitting
-	-- inside the passage (a bit back from the mouth) rather than out on
-	-- the open field.
+	-- The despawner itself, sized to fit the doorway and sitting inside
+	-- the passage (a bit back from the mouth) rather than out on the open
+	-- field.
 	local squareSize = C.TunnelDespawnerSize
 	local despawner = Instance.new("Part")
 	despawner.Name = "SpawnerSquare"

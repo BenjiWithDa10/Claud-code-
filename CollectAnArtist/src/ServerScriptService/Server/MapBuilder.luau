@@ -29,7 +29,8 @@
 			├── Risers     (solid ascending steps; bottom rows cut for the tunnel)
 			├── Figures    (many rows of person-scale dark silhouettes)
 			└── Tunnel     (a real recessed passage into the exit wall)
-				├── LeftWall/RightWall/Ceiling/Floor (per fade segment, mouth to back)
+				├── LeftWall/RightWall/Floor (single solid color, mouth to back)
+				├── Haze         (semi-transparent cards fading toward the back)
 				├── Backdrop     (dark cap at the very back)
 				└── SpawnerSquare (the despawner, inside the passage)
 

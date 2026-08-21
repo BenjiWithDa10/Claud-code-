@@ -33,21 +33,19 @@ kept in its own folder so the two games don't collide.
   end and left open-ended at their west tip.
 
   The exit wall has a real stadium **player-tunnel** (`Map.Crowd.Tunnel`)
-  built into it, not just a painted-on dark square: a recessed passage —
-  side walls, a thick lintel and a floor — cut through the bottom rows of
-  risers/figures. The doorway itself is person-scale (`TunnelWidth` x
-  `TunnelHeight`, 10x9 by default), squared off rather than arched/rounded;
-  the leftover height above it (up to where the rows arch over) is filled
-  by a solid lintel in a tone close to the risers, so the passage reads as
-  running *under* the stands rather than a box poking through the wall. It
-  fades from a lit grey at the mouth to near-black at the back via many
-  small color-and-transparency steps (`TunnelWallColor` → `TunnelColor`
-  over `TunnelFadeSteps` segments, ramping up to `TunnelMaxFadeTransparency`
-  on the side walls), capped by a dark `Backdrop` so it reads as a
-  continuous darkening into real depth rather than a few flat bands or an
-  abrupt stop. Rows above the tunnel continue uninterrupted, arching over
-  the opening. The despawner (`SpawnerSquare`, sized via
-  `TunnelDespawnerSize` to fit the smaller doorway) sits inside the passage
+  built into it: a recessed passage — side walls and a floor, one
+  consistent solid color throughout, no gradient — cut through the bottom
+  rows of risers/figures. The doorway is a person-scale archway
+  (`TunnelWidth` x `TunnelHeight`, 16x14 by default), squared off rather
+  than arched/rounded. Nothing is built above the doorway — rows above
+  `TunnelRows` continue uninterrupted on their own, arching over the
+  opening. The mouth-to-back darkening comes from separate semi-transparent
+  `Haze` cards standing in the passage's open air (`TunnelHazeSteps` of
+  them, ramping from `TunnelHazeNearTransparency` to
+  `TunnelHazeFarTransparency`) rather than from the walls' own material, so
+  looking down the tunnel compounds into a real fade toward darkness;
+  a dark `Backdrop` caps the very end. The despawner (`SpawnerSquare`, sized
+  via `TunnelDespawnerSize` to fit the doorway) sits inside the passage
   itself (`TunnelDespawnerInset` studs in from the mouth) instead of out on
   the open field. The invisible barrier follows a matching notch shape —
   flush with the rest of the exit wall except across the tunnel's width,
